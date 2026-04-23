@@ -13,7 +13,10 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + "-" + file.originalname);
   }
 });
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 const app = express();
 
@@ -28,7 +31,52 @@ app.get("/", (req, res) => {
 
 // ✅ Keep your AI route (DON’T REMOVE)
 app.post("/ai-edit", (req, res) => {
-  // your AI logic here
+  let { text, action } = req.body;
+
+  if (!text) return res.send("");
+
+  let sentences = text
+    .replace(/\n/g, " ")
+    .split(/[.!?]/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  // 🔹 SUMMARIZE
+  if (action === "summarize") {
+    let summary = sentences.slice(0, Math.ceil(sentences.length / 2));
+    res.send(summary.join(". ") + (summary.length ? "." : ""));
+  }
+
+  // 🔹 REWRITE (make more natural)
+  else if (action === "rewrite") {
+    let rewritten = sentences.map(s => {
+      return "👉 " + s.charAt(0).toUpperCase() + s.slice(1);
+    });
+    res.send(rewritten.join(". ") + (rewritten.length ? "." : ""));
+  }
+
+  // 🔹 GRAMMAR FIX
+  else if (action === "grammar") {
+    let fixed = sentences.map(s => {
+      s = s.charAt(0).toUpperCase() + s.slice(1);
+
+      // better formatting
+      s = s.replace(/\bi\b/g, "I");
+      s = s.replace(/\bai\b/gi, "AI");
+      s = s.replace(/\bdont\b/gi, "don't");
+
+      // add spacing + punctuation fix
+      s = s.replace(/\s+/g, " ").trim();
+
+      return s;
+    });
+
+    res.send(fixed.join(". ") + (fixed.length ? "." : ""));
+  }
+
+  else {
+    res.send(text);
+  }
 });
 
 app.post("/upload", upload.single("file"), (req, res) => {
@@ -37,26 +85,94 @@ app.post("/upload", upload.single("file"), (req, res) => {
 
 app.get("/read/:filename", async (req, res) => {
   const filePath = `uploads/${req.params.filename}`;
-  const ext = req.params.filename.split(".").pop();
+  const ext = req.params.filename.split(".").pop().toLowerCase();
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
+  }
 
   try {
     if (ext === "docx") {
       const result = await mammoth.extractRawText({ path: filePath });
-      res.json({ content: result.value });
-    } 
+      res.json({ type: "text", content: result.value });
+    }
+
     else if (ext === "xlsx") {
       const workbook = XLSX.readFile(filePath);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const data = XLSX.utils.sheet_to_json(sheet);
-      res.json({ content: JSON.stringify(data, null, 2) });
-    } 
+      res.json({ type: "text", content: JSON.stringify(data, null, 2) });
+    }
+
+    else if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) {
+      res.json({ type: "image", content: `/uploads/${req.params.filename}` });
+    }
+
     else {
       const data = fs.readFileSync(filePath, "utf8");
-      res.json({ content: data });
+      res.json({ type: "text", content: data });
     }
   } catch (err) {
     res.status(500).send("Error reading file");
   }
+});
+
+app.post("/save", (req, res) => {
+  const { filename, content } = req.body;
+
+  if (!filename) return res.status(400).send("No file");
+
+  const filePath = `uploads/${filename}`;
+
+  try {
+    fs.writeFileSync(filePath, content);
+    res.send("File saved successfully");
+  } catch (err) {
+    res.status(500).send("Error saving file");
+  }
+});
+
+app.get("/files", (req, res) => {
+  try {
+    const files = fs.readdirSync("uploads");
+
+    const fileList = files.map(file => {
+      const stats = fs.statSync(`uploads/${file}`);
+      return {
+        name: file,
+        size: stats.size
+      };
+    });
+
+    res.json(fileList);
+  } catch (err) {
+    res.status(500).send("Error reading files");
+  }
+});
+
+app.delete("/delete/:filename", (req, res) => {
+  const filePath = `uploads/${req.params.filename}`;
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
+  }
+
+  try {
+    fs.unlinkSync(filePath);
+    res.send("File deleted");
+  } catch (err) {
+    res.status(500).send("Error deleting file");
+  }
+});
+
+app.get("/download/:filename", (req, res) => {
+  const filePath = `uploads/${req.params.filename}`;
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("File not found");
+  }
+
+  res.download(filePath);
 });
 
 // ✅ Server start (always last)
