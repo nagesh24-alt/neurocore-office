@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Office</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🚀 AI Office Software</h1>
+
+<div class="tabs">
+  <button onclick="showTab('editor')">Editor</button>
+  <button onclick="showTab('ai')">AI Chat</button>
+</div>
+
+<div id="editor" class="tab">
+  <h2>Text Editor</h2>
+  <textarea id="text"></textarea>
+</div>
+
+<div id="ai" class="tab">
+  <h2>AI Assistant</h2>
+  <textarea id="input"></textarea>
+  
+  <select id="action">
+    <option value="summarize">Summarize</option>
+    <option value="rewrite">Rewrite</option>
+    <option value="grammar">Fix Grammar</option>
+  </select>
+
+  <button onclick="runAI()">Run AI</button>
+
+  <p id="output"></p>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
