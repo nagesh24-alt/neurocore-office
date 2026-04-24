@@ -9,11 +9,22 @@
 
 <!-- 🔴 TOP RIBBON -->
 <div class="ribbon">
-  <button>📄 File</button>
-  <button>✏️ Edit</button>
-  <button>🤖 AI</button>
-  <button onclick="saveFile()">💾 Save</button>
-  <button onclick="createPDF()">📥 Export PDF</button>
+  <div class="group">
+    <span>File</span>
+    <button>📄 New</button>
+    <button>📂 Open</button>
+  </div>
+
+  <div class="group">
+    <span>Edit</span>
+    <button onclick="formatText('bold')">B</button>
+    <button onclick="formatText('italic')">I</button>
+  </div>
+
+  <div class="group">
+    <span>AI</span>
+    <button onclick="runAI()">⚡ AI</button>
+  </div>
 </div>
 
 <div class="container">
