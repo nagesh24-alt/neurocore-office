@@ -56,7 +56,7 @@ async function loadFile() {
   try {
     if (!currentFile.trim()) return;
 
-    const res = await fetch(`/read/${currentFile}`);
+    const res = await fetch(`/read/${encodeURIComponent(currentFile)}`);
     if (!res.ok) throw new Error("Failed to load file");
 
     const data = await res.json();
@@ -187,17 +187,51 @@ async function saveFile() {
 
 // Load all files
 async function loadFiles() {
+  const container = document.getElementById("files-container");
+  const countEl = document.getElementById("files-count");
+  const legacyList = document.getElementById("fileList");
+
+  console.log("loadFiles: elements found", {
+    filesContainer: Boolean(container),
+    fileList: Boolean(legacyList),
+    filesCount: Boolean(countEl)
+  });
+
+  if (!container && !legacyList) {
+    console.error("fileList element not found and files-container element not found");
+    return;
+  }
+
   try {
     const res = await fetch("/files");
+    if (!res.ok) {
+      throw new Error(`Failed to fetch files: ${res.status} ${res.statusText}`);
+    }
+
     const files = await res.json();
+    console.log("loadFiles: API response", files);
 
-    const list = document.getElementById("fileList");
-    list.innerHTML = "";
-
-    if (files.length === 0) {
-      list.innerHTML = "<li><div class='file-card' style='justify-content: center; color: #747d8c;'>No files found</div></li>";
+    if (!Array.isArray(files) || files.length === 0) {
+      if (container) renderEmpty(container, countEl, "No files available");
+      if (legacyList) legacyList.innerHTML = "";
       return;
     }
+
+    if (countEl) {
+      countEl.textContent = `${files.length} file${files.length !== 1 ? "s" : ""}`;
+    }
+
+    if (container) {
+      container.innerHTML = buildTable(files);
+      return;
+    }
+
+    const list = document.getElementById("fileList");
+    if (!list) {
+      console.error("fileList element not found");
+      return;
+    }
+    list.innerHTML = "";
 
     files.forEach(file => {
       let icon = "📄";
@@ -231,6 +265,7 @@ async function loadFiles() {
     });
   } catch (err) {
     console.error("Error loading files", err);
+    if (container) renderEmpty(container, countEl, "Unable to load files right now");
   }
 }
 
@@ -239,18 +274,18 @@ function openFile(name) {
   currentFile = name;
   loadFile();
 
-  document.querySelectorAll("#fileList li").forEach(li => {
-    li.classList.remove("active");
+  document.querySelectorAll("#fileList tr, #fileList li").forEach(item => {
+    item.classList.remove("active");
   });
 
-  if (window.event) {
-    window.event.target.closest("li").classList.add("active");
+  if (window.event?.target) {
+    window.event.target.closest("tr, li")?.classList.add("active");
   }
 }
 
 // Delete file
 async function deleteFile(name) {
-  const res = await fetch(`/delete/${name}`, { method: "DELETE" });
+  const res = await fetch(`/delete/${encodeURIComponent(name)}`, { method: "DELETE" });
 
   if (res.ok) {
     alert("File deleted!");
@@ -262,11 +297,10 @@ async function deleteFile(name) {
 
 // Download file
 function downloadFile(name) {
-  window.open(`/download/${name}`);
+  window.open(`/download/${encodeURIComponent(name)}`);
 }
 
 // Load file list on page load
-loadFiles();
 
 /* ── PDF Viewer State ──────────────────────────────────────────── */
 let currentZoom = 100;
@@ -413,27 +447,7 @@ function toggleDarkMode() {
 
 /* ── Load Files ── */
 async function loadRecentFiles() {
-  const container = document.getElementById('files-container');
-  const countEl = document.getElementById('files-count');
-  if (!container) return;
-
-  try {
-    const res = await fetch('/files');
-    let files = [];
-    if (res.ok) files = await res.json();
-
-    if (!files || files.length === 0) {
-      renderEmpty(container, countEl);
-      return;
-    }
-
-    countEl.textContent = `${files.length} file${files.length !== 1 ? 's' : ''}`;
-    container.innerHTML = buildTable(files);
-
-  } catch (e) {
-    console.error(e);
-    renderEmpty(container, countEl);
-  }
+  return loadFiles();
 }
 
 function getFileType(name) {
@@ -452,9 +466,10 @@ function fileTypeLabel(t) {
 function buildTable(files) {
   const rows = files.map((f, i) => {
     // our backend returns { name: "...", size: 1234 }
-    const t = getFileType(f.name);
+    const t = getFileType(f.name || f.filename);
     const mod = f.modified || f.lastModified || f.updatedAt || '—';
     const name = f.name || f.filename || 'Untitled';
+    const jsName = escJsString(name);
     return `
     <tr>
       <td>
@@ -467,13 +482,13 @@ function buildTable(files) {
       <td class="file-date">${escHtml(String(mod))}</td>
       <td>
         <div class="file-actions">
-          <button class="action-btn" title="Open" onclick="handleOpen('${name}')">
+          <button class="action-btn" title="Open" onclick="handleOpen('${jsName}')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          <button class="action-btn" title="Download" onclick="handleDownload('${name}')">
+          <button class="action-btn" title="Download" onclick="handleDownload('${jsName}')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
-          <button class="action-btn danger" title="Delete" onclick="handleDelete('${name}', this)">
+          <button class="action-btn danger" title="Delete" onclick="handleDelete('${jsName}', this)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
@@ -491,21 +506,25 @@ function buildTable(files) {
         <th>Actions</th>
       </tr>
     </thead>
-    <tbody>${rows}</tbody>
+    <tbody id="fileList">${rows}</tbody>
   </table>`;
 }
 
-function renderEmpty(container, countEl) {
-  countEl.textContent = '0 files';
+function renderEmpty(container, countEl, message = 'No files available') {
+  if (countEl) countEl.textContent = '0 files';
   container.innerHTML = `
   <div class="empty-state">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 10px; display:block;"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-    <p>No files yet. Upload or create a new document to get started.</p>
+    <p>${escHtml(message)}</p>
   </div>`;
 }
 
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escJsString(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
 }
 
 /* ── File actions — bridge to YOUR functions ── */
@@ -515,13 +534,13 @@ function handleOpen(name) {
 }
 
 function handleDownload(name) {
-  window.location.href = "/download/" + name;
+  window.location.href = "/download/" + encodeURIComponent(name);
 }
 
 async function handleDelete(name, btn) {
   if (!confirm(`Delete "${name}"?`)) return;
   try {
-    const res = await fetch("/delete/" + name, { method: "DELETE" });
+    const res = await fetch("/delete/" + encodeURIComponent(name), { method: "DELETE" });
     if (res.ok) {
       if (btn) btn.closest('tr').remove();
       loadRecentFiles();

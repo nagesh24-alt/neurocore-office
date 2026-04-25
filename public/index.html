@@ -298,10 +298,26 @@
               <div class="files-header-title">All Files</div>
               <div class="files-count" id="files-count">— files</div>
             </div>
-            <div id="files-container">
-              <div class="loading-dots">
-                <span></span><span></span><span></span>
-              </div>
+            <div id="files-container" aria-live="polite">
+              <table class="files-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Last Modified</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="fileList">
+                  <tr>
+                    <td colspan="4" class="table-message">
+                      <div class="loading-dots">
+                        <span></span><span></span><span></span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
