@@ -76,6 +76,17 @@
         </svg>
         PDF Viewer
       </div>
+
+      <div class="nav-item" onclick="setNav(this,'doc'); openDocViewer()">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="8" y1="13" x2="16" y2="13" />
+          <line x1="8" y1="17" x2="14" y2="17" />
+        </svg>
+        DOC Viewer
+      </div>
     </div>
 
     <!-- Tools -->
@@ -457,6 +468,142 @@
         <div id="preview" contenteditable="true"></div>
       </div>
 
+      <!-- DOC VIEWER -->
+      <div id="docViewer" class="tab">
+        <div id="doc-toolbar">
+          <div class="tb-logo">
+            <div class="tb-logo-icon doc-logo-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" style="fill:rgba(255,255,255,.25)" />
+              </svg>
+            </div>
+            <span class="tb-logo-name">DocEditor</span>
+          </div>
+
+          <div class="tb-filename">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span id="doc-filename-text">No file open</span>
+          </div>
+
+          <div class="tb-sep"></div>
+
+          <div class="tb-controls">
+            <button class="tb-btn doc-format-btn" onclick="boldText()" title="Bold">B</button>
+            <button class="tb-btn doc-format-btn" onclick="italicText()" title="Italic"><em>I</em></button>
+            <button class="tb-btn doc-format-btn" onclick="underlineText()" title="Underline"><u>U</u></button>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" onclick="setHeading('H1')" title="Heading 1">H1</button>
+            <button class="tb-btn" onclick="setHeading('H2')" title="Heading 2">H2</button>
+            <button class="tb-btn" onclick="setHeading('P')" title="Normal text">Normal</button>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" onclick="alignText('left')" title="Align left">Left</button>
+            <button class="tb-btn" onclick="alignText('center')" title="Align center">Center</button>
+            <button class="tb-btn" onclick="alignText('right')" title="Align right">Right</button>
+          </div>
+
+          <div class="tb-spacer"></div>
+
+          <button class="tb-btn primary" onclick="saveFile()" title="Save document">Save</button>
+          <button class="tb-btn" onclick="showTab('editor')" title="Close DOC Viewer"
+            style="background:var(--doc-blue); color:white;">
+            Close DOC
+          </button>
+        </div>
+
+        <div id="doc-body">
+          <div id="doc-sidebar">
+            <div class="sidebar-header">
+              <span class="sidebar-title">Sections</span>
+            </div>
+            <div class="doc-sections" id="doc-sections-list">
+              <div class="doc-section-empty">No sections yet</div>
+            </div>
+          </div>
+
+          <div id="doc-viewer">
+            <div id="docContent" contenteditable="true" spellcheck="true" oninput="updateDocStatus()"></div>
+          </div>
+
+          <div id="doc-tools">
+            <div class="tools-header">
+              <div class="tools-header-title">DOC Tools</div>
+            </div>
+            <div class="tools-list">
+              <div class="tool-item enabled" onclick="exportDocx()" title="Export as DOCX">
+                <div class="tool-icon icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </div>
+                <div class="tool-text">
+                  <span class="tool-name">Export DOCX</span>
+                  <span class="tool-desc">Save edited file</span>
+                </div>
+                <span class="tool-badge badge-active">Active</span>
+              </div>
+
+              <div class="tool-item enabled" onclick="updateDocWordCount()" title="Word count">
+                <div class="tool-icon icon-grn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 7h16M4 12h16M4 17h10" />
+                  </svg>
+                </div>
+                <div class="tool-text">
+                  <span class="tool-name">Word Count</span>
+                  <span class="tool-desc"><span id="doc-word-count">0</span> words</span>
+                </div>
+              </div>
+
+              <div class="tool-item disabled" data-tip="Coming Soon">
+                <div class="tool-icon icon-red">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div class="tool-text">
+                  <span class="tool-name">Export PDF</span>
+                  <span class="tool-desc">Coming soon</span>
+                </div>
+                <span class="tool-badge badge-soon">Soon</span>
+              </div>
+
+              <div class="tool-item disabled" data-tip="Coming Soon">
+                <div class="tool-icon icon-purp">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                </div>
+                <div class="tool-text">
+                  <span class="tool-name">Advanced Review</span>
+                  <span class="tool-desc">Track changes</span>
+                </div>
+                <span class="tool-badge badge-soon">Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="doc-status">
+          <div class="status-item">
+            <div class="status-dot"></div> <span id="doc-edited-status">Saved</span>
+          </div>
+          <div class="status-item">
+            <span id="doc-status-filename">No file</span>
+          </div>
+          <div class="status-item">
+            <span id="doc-status-words">0 words</span>
+          </div>
+        </div>
+      </div>
+
 
       <!-- AI -->
       <div id="ai" class="tab">
@@ -544,7 +691,7 @@
             <div class="tb-sep"></div>
 
             <!-- Zoom out -->
-            <button class="tb-btn" onclick="adjustZoom(-25)" title="Zoom out">
+            <button class="tb-btn" onclick="zoomOut()" title="Zoom out">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -563,7 +710,7 @@
             </select>
 
             <!-- Zoom in -->
-            <button class="tb-btn" onclick="adjustZoom(25)" title="Zoom in">
+            <button class="tb-btn" onclick="zoomIn()" title="Zoom in">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -575,10 +722,20 @@
             <div class="tb-sep"></div>
 
             <!-- Page indicator -->
+            <button class="tb-btn" onclick="prevPage()" title="Previous page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
             <div class="tb-page-indicator">
-              <input type="number" id="pageInput" value="1" min="1" />
+              <input type="number" id="pageInput" value="1" min="1" onchange="renderPage(parseInt(this.value, 10))" />
               <span class="pg-total">/ <span id="totalPages">—</span></span>
             </div>
+            <button class="tb-btn" onclick="nextPage()" title="Next page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
 
             <div class="tb-sep"></div>
 
@@ -636,7 +793,8 @@
 
             <!-- PDF frame wrapper (hidden until file loaded) -->
             <div class="pdf-page-wrapper" id="pdf-page-wrapper" style="display:none;">
-              <iframe id="pdf-iframe" src="" title="PDF Document"></iframe>
+              <canvas id="pdfCanvas"></canvas>
+              <div id="pdf-error" class="pdf-error" style="display:none;">Failed to load PDF</div>
             </div>
           </div>
 
@@ -824,6 +982,7 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="script.js"></script>
 </body>
 
