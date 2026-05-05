@@ -3,8 +3,8 @@ function showTab(tab) {
   document.querySelectorAll(".tab").forEach(t => t.style.display = "none");
   const tabEl = document.getElementById(tab);
   if (tabEl) {
-    if (tab === "pdf-viewer-tab" || tab === "docViewer") tabEl.style.display = "flex";
-    else if (tab === "dashboard") tabEl.style.display = "grid";
+    if (tab === "pdf-viewer-tab" || tab === "docViewer" || tab === "editor") tabEl.style.display = "flex";
+    else if (tab === "dashboard" || tab === "ai") tabEl.style.display = "grid";
     else tabEl.style.display = "block";
   }
 }
@@ -23,6 +23,7 @@ function setHeading(tag) {
   focusActiveEditor();
   document.execCommand('formatBlock', false, tag);
   buildDocSections();
+  buildEditorOutline();
   updateDocStatus();
 }
 
@@ -110,6 +111,7 @@ async function loadFile() {
 
     if (data.type === "text") {
       preview.innerText = data.content; // Plain text uses innerText
+      prepareEditorWorkspace(currentFile);
       showTab("editor");
     }
     else if (data.type === "docx") {
@@ -119,6 +121,7 @@ async function loadFile() {
     else if (data.type === "image") {
       preview.innerHTML =
         `<img src="${data.content}" style="max-width:100%">`;
+      prepareEditorWorkspace(currentFile);
       showTab("editor");
     }
     else if (data.type === "pdf") {
@@ -140,10 +143,12 @@ async function loadFile() {
       });
       tableHtml += "</table>";
       preview.innerHTML = tableHtml;
+      prepareEditorWorkspace(currentFile);
       showTab("editor");
     }
     else {
       preview.innerText = "Preview not supported for this file type.";
+      prepareEditorWorkspace(currentFile);
       showTab("editor");
     }
   } catch (err) {
@@ -921,3 +926,191 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeUploadM
 document.addEventListener('DOMContentLoaded', () => {
   loadRecentFiles();
 });
+
+/* ── Editor Workspace Logic ───────────────────────────────────────── */
+function prepareEditorWorkspace(filename) {
+  const preview = document.getElementById("preview");
+  const emptyState = document.getElementById("editor-empty-state");
+  const nameEl = document.getElementById("editor-filename");
+  const statusEl = document.getElementById("editor-status");
+  const statusDot = document.getElementById("editor-status-dot");
+
+  if (nameEl) nameEl.textContent = filename || "Untitled Document";
+  if (statusEl) statusEl.textContent = "Saved";
+  if (statusDot) statusDot.style.background = "#10b981"; // green
+
+  if (emptyState) emptyState.style.display = "none";
+  if (preview) preview.style.display = "block";
+
+  updateEditorWordCount();
+  buildEditorOutline();
+}
+
+function newEditorFile() {
+  currentFile = "Untitled.txt";
+  const preview = document.getElementById("preview");
+  if (preview) preview.innerHTML = "<h1>Untitled Document</h1><p></p>";
+
+  prepareEditorWorkspace(currentFile);
+
+  const statusEl = document.getElementById("editor-status");
+  const statusDot = document.getElementById("editor-status-dot");
+  if (statusEl) statusEl.textContent = "Editing";
+  if (statusDot) statusDot.style.background = "#eab308"; // yellow
+
+  showTab('editor');
+}
+
+function handleEditorInput() {
+  const statusEl = document.getElementById("editor-status");
+  const statusDot = document.getElementById("editor-status-dot");
+  if (statusEl) statusEl.textContent = "Editing";
+  if (statusDot) statusDot.style.background = "#eab308"; // yellow
+  updateEditorWordCount();
+  buildEditorOutline();
+}
+
+function updateEditorWordCount() {
+  const preview = document.getElementById("preview");
+  const wordCountEl = document.getElementById("editor-word-count");
+  const charCountEl = document.getElementById("editor-char-count");
+  const statusWordsEl = document.getElementById("editor-status-words");
+  if (!preview) return;
+
+  const text = preview.innerText || "";
+  const trimmed = text.trim();
+  const count = trimmed ? trimmed.split(/\s+/).length : 0;
+  if (wordCountEl) wordCountEl.textContent = count;
+  if (charCountEl) charCountEl.textContent = text.length;
+  if (statusWordsEl) statusWordsEl.textContent = `${count} words`;
+}
+
+function buildEditorOutline() {
+  const list = document.getElementById("editor-outline-list");
+  const preview = document.getElementById("preview");
+  if (!list || !preview) return;
+
+  const headings = [...preview.querySelectorAll("h1, h2")];
+  list.innerHTML = "";
+
+  if (!headings.length) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "editor-outline-item active";
+    item.textContent = "Start";
+    item.onclick = () => preview.scrollIntoView({ behavior: "smooth", block: "start" });
+    list.appendChild(item);
+    return;
+  }
+
+  headings.forEach((heading, index) => {
+    if (!heading.id) heading.id = `editor-section-${index + 1}`;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `editor-outline-item ${heading.tagName.toLowerCase()}${index === 0 ? " active" : ""}`;
+    item.textContent = heading.textContent.trim() || `Section ${index + 1}`;
+    item.onclick = () => {
+      document.querySelectorAll(".editor-outline-item").forEach(el => el.classList.remove("active"));
+      item.classList.add("active");
+      heading.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    list.appendChild(item);
+  });
+}
+
+async function runEditorAI(action) {
+  const output = document.getElementById("editor-ai-output");
+  const input = document.getElementById("editor-ai-input");
+  const preview = document.getElementById("preview");
+  const selectedText = window.getSelection()?.toString().trim();
+  const text = input?.value.trim() || selectedText || preview?.innerText || "";
+
+  if (!output) return;
+  if (!text.trim()) {
+    output.textContent = "Open a document or type an instruction first.";
+    return;
+  }
+
+  output.textContent = "Processing...";
+
+  try {
+    const res = await fetch("/ai-edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, action })
+    });
+
+    if (!res.ok) throw new Error("AI request failed");
+    output.textContent = await res.text();
+  } catch (err) {
+    console.error("Editor AI Error:", err);
+    output.textContent = "AI is unavailable right now.";
+  }
+}
+
+function closeEditor() {
+  showTab('dashboard');
+}
+
+async function saveEditorFile() {
+  if (!currentFile || currentFile === "Untitled.txt") {
+    const newName = prompt("Enter file name to save:", "Document.txt");
+    if (!newName) return;
+    currentFile = newName;
+    document.getElementById('editor-filename').textContent = currentFile;
+  }
+
+  const saveBtn = document.getElementById("editor-save-btn");
+  if (saveBtn) {
+    saveBtn.textContent = "Saving...";
+    saveBtn.style.opacity = "0.7";
+  }
+
+  const success = await saveFile({ silent: true });
+
+  if (saveBtn) {
+    saveBtn.textContent = "Save";
+    saveBtn.style.opacity = "1";
+  }
+
+  if (success) {
+    const statusEl = document.getElementById("editor-status");
+    const statusDot = document.getElementById("editor-status-dot");
+    if (statusEl) statusEl.textContent = "Saved";
+    if (statusDot) statusDot.style.background = "#10b981"; // green
+  } else {
+    alert("Save failed!");
+  }
+}
+
+function setAIToolFilter(button) {
+  document.querySelectorAll(".ai-category-tabs button").forEach(tab => tab.classList.remove("active"));
+  button.classList.add("active");
+  filterAITools();
+}
+
+function filterAITools() {
+  const query = document.getElementById("ai-tool-search")?.value.trim().toLowerCase() || "";
+  const activeFilter = document.querySelector(".ai-category-tabs button.active")?.dataset.filter || "all";
+
+  document.querySelectorAll(".ai-tool-card").forEach(card => {
+    const name = card.dataset.toolName?.toLowerCase() || "";
+    const categories = card.dataset.category || "";
+    const text = card.innerText.toLowerCase();
+    const matchesSearch = !query || name.includes(query) || text.includes(query);
+    const matchesFilter = activeFilter === "all" || categories.includes(activeFilter);
+    card.classList.toggle("is-hidden", !matchesSearch || !matchesFilter);
+  });
+}
+
+function openAITool(action, label) {
+  const actionEl = document.getElementById("action");
+  const titleEl = document.getElementById("ai-runner-title");
+  const inputEl = document.getElementById("input");
+  const outputEl = document.getElementById("output");
+
+  if (actionEl) actionEl.value = action;
+  if (titleEl) titleEl.textContent = label;
+  if (outputEl) outputEl.textContent = `${label} is ready. Add text or pull content from the editor.`;
+  if (inputEl) inputEl.focus();
+}

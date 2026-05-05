@@ -443,29 +443,191 @@
       </main>
 
       <!-- EDITOR -->
-      <div id="editor" class="tab">
-        <input type="file" onchange="uploadFile(event)">
-        <div class="toolbar">
-          <div class="toolbar-group">
-            <button onclick="formatText('bold')">B</button>
-            <button onclick="formatText('italic')">I</button>
-            <button onclick="formatText('underline')">U</button>
-            <button onclick="formatText('insertUnorderedList')">Bullet</button>
+      <div id="editor" class="tab" style="display:none; height:100vh; flex-direction:column; width:100%; position:absolute; top:0; left:0; z-index:1000; background:#f5f6f8;">
+        <input type="file" id="editorFileInput" accept=".txt,.html,.doc,.docx" style="display:none;" onchange="uploadFile(event)">
+
+        <!-- Editor Top Bar -->
+        <div id="editor-topbar" style="display:flex; align-items:center; padding:0 16px; height:56px; background:white; border-bottom:1px solid #e5e7eb; gap:16px;">
+          <!-- Logo/Icon -->
+          <div class="tb-logo" style="display:flex; align-items:center; gap:8px;">
+            <div class="tb-logo-icon" style="width:32px; height:32px; background:#2563eb; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
           </div>
-          <div class="toolbar-separator"></div>
-          <div class="toolbar-group">
-            <button onclick="setHeading('P')">Normal</button>
-            <button onclick="setHeading('H1')">H1</button>
-            <button onclick="setHeading('H2')">H2</button>
+          <!-- Title & Status -->
+          <div style="display:flex; flex-direction:column;">
+            <div id="editor-filename" style="font-weight:600; font-size:14px; color:#111827;">No file open</div>
+            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280;">
+              <div id="editor-status-dot" class="status-dot" style="width:6px; height:6px; border-radius:50%; background:#10b981;"></div>
+              <span id="editor-status">Saved</span>
+            </div>
           </div>
-          <div class="toolbar-separator"></div>
-          <div class="toolbar-group">
-            <button onclick="formatText('justifyLeft')">Left</button>
-            <button onclick="formatText('justifyCenter')">Center</button>
-            <button onclick="formatText('justifyRight')">Right</button>
+
+          <div class="tb-spacer" style="flex:1;"></div>
+
+          <!-- Actions -->
+          <div class="tb-controls" style="display:flex; gap:8px; align-items:center;">
+            <button class="tb-btn" onclick="newEditorFile()" title="New Document" style="display:flex; align-items:center; gap:6px; background:transparent; border:none; padding:6px 12px; cursor:pointer; color:#374151; font-weight:500; font-size:13px; border-radius:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              New
+            </button>
+            <button class="tb-btn" onclick="showTab('dashboard')" title="Open Document" style="display:flex; align-items:center; gap:6px; background:transparent; border:none; padding:6px 12px; cursor:pointer; color:#374151; font-weight:500; font-size:13px; border-radius:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              Open
+            </button>
+            <button class="tb-btn" onclick="document.getElementById('editorFileInput').click()" title="Upload Document" style="display:flex; align-items:center; gap:6px; background:transparent; border:none; padding:6px 12px; cursor:pointer; color:#374151; font-weight:500; font-size:13px; border-radius:6px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path></svg>
+              Upload
+            </button>
+            <div style="width:1px; height:24px; background:#e5e7eb; margin:0 4px;"></div>
+            <button class="tb-btn primary" id="editor-save-btn" onclick="saveEditorFile()" title="Save document" style="background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:500; font-size:13px;">
+              Save
+            </button>
+            <button class="tb-btn editor-coming-soon" type="button" title="Coming Soon" style="background:transparent; border:none; padding:6px 12px; cursor:not-allowed; color:#374151; font-weight:500; font-size:13px; border-radius:6px;">
+              Share
+            </button>
+            <div class="editor-avatar" title="Profile">A</div>
+            <button class="tb-btn" onclick="closeEditor()" title="Close Editor" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:500; font-size:13px;">
+              ✖ Close
+            </button>
           </div>
         </div>
-        <div id="preview" contenteditable="true"></div>
+
+        <!-- Editor Toolbar -->
+        <div class="editor-format-toolbar" style="display:flex; justify-content:center; padding:8px; background:white; border-bottom:1px solid #e5e7eb; gap:16px;">
+          <div class="toolbar-group" style="display:flex; gap:4px; align-items:center; background:#f3f4f6; padding:4px; border-radius:6px;">
+            <button class="fmt-btn" onclick="formatText('bold')" title="Bold" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; font-family:serif; font-weight:bold;">B</button>
+            <button class="fmt-btn" onclick="formatText('italic')" title="Italic" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; font-family:serif; font-style:italic;">I</button>
+            <button class="fmt-btn" onclick="formatText('underline')" title="Underline" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; font-family:serif; text-decoration:underline;">U</button>
+          </div>
+          <div class="toolbar-group" style="display:flex; gap:4px; align-items:center; background:#f3f4f6; padding:4px; border-radius:6px;">
+            <button class="fmt-btn" onclick="setHeading('H1')" title="Heading 1" style="background:transparent; border:none; height:28px; padding:0 8px; border-radius:4px; cursor:pointer; color:#374151; font-weight:600;">H1</button>
+            <button class="fmt-btn" onclick="setHeading('H2')" title="Heading 2" style="background:transparent; border:none; height:28px; padding:0 8px; border-radius:4px; cursor:pointer; color:#374151; font-weight:600;">H2</button>
+            <button class="fmt-btn" onclick="setHeading('P')" title="Normal Text" style="background:transparent; border:none; height:28px; padding:0 8px; border-radius:4px; cursor:pointer; color:#374151;">Normal</button>
+          </div>
+          <div class="toolbar-group" style="display:flex; gap:4px; align-items:center; background:#f3f4f6; padding:4px; border-radius:6px;">
+            <button class="fmt-btn" onclick="formatText('justifyLeft')" title="Align Left" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="19" y2="18"></line></svg></button>
+            <button class="fmt-btn" onclick="formatText('justifyCenter')" title="Align Center" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="5" y1="18" x2="19" y2="18"></line></svg></button>
+            <button class="fmt-btn" onclick="formatText('justifyRight')" title="Align Right" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="9" y1="12" x2="21" y2="12"></line><line x1="5" y1="18" x2="21" y2="18"></line></svg></button>
+          </div>
+          <div class="toolbar-group" style="display:flex; gap:4px; align-items:center; background:#f3f4f6; padding:4px; border-radius:6px;">
+            <button class="fmt-btn" onclick="formatText('insertUnorderedList')" title="Bullet List" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="21" y2="6"></line><line x1="9" y1="12" x2="21" y2="12"></line><line x1="9" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg></button>
+            <button class="fmt-btn" onclick="formatText('insertOrderedList')" title="Numbered List" style="background:transparent; border:none; width:28px; height:28px; border-radius:4px; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M4 14h2l-2 4h2"></path></svg></button>
+          </div>
+        </div>
+
+        <!-- Editor Body (Workspace + Right Panel) -->
+        <div id="editor-body" style="display:flex; flex:1; overflow:hidden; background:#f5f6f8;">
+          <aside id="editor-outline-panel">
+            <div class="editor-panel-title">Outline</div>
+            <div id="editor-outline-list">
+              <button class="editor-outline-item active" type="button">Start</button>
+            </div>
+          </aside>
+
+          <!-- Workspace -->
+          <div id="editor-workspace" style="flex:1; overflow-y:auto; position:relative; display:flex; justify-content:center; padding:40px;">
+            <div id="editor-empty-state" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; color:#6b7280; pointer-events:none;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 16px; display:block; opacity:0.5;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <h3 style="margin-bottom:8px; color:#374151; font-weight:600; font-size:18px;">No document loaded</h3>
+              <p style="font-size:14px;">Open or create a document to start editing</p>
+            </div>
+
+            <div id="preview" contenteditable="true" oninput="handleEditorInput()" style="width:800px; max-width:100%; min-height:1056px; background:white; padding:96px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); border-radius:4px; outline:none; display:none; color:#111827; font-size:16px; line-height:1.6;"></div>
+          </div>
+
+          <!-- Right Panel -->
+          <div id="editor-tools-panel" style="width:300px; background:white; border-left:1px solid #e5e7eb; overflow-y:auto; display:flex; flex-direction:column;">
+            <div class="tools-header" style="padding:16px; border-bottom:1px solid #e5e7eb; font-weight:600; font-size:15px; color:#111827;">
+              Editor Tools
+            </div>
+            <div class="tools-list" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+              <div class="editor-ai-card">
+                <div class="editor-panel-title">AI Assistant</div>
+                <textarea id="editor-ai-input" placeholder="Ask NeuroCore to work with the current document..."></textarea>
+                <div class="editor-ai-actions">
+                  <button onclick="runEditorAI('rewrite')">Generate content</button>
+                  <button onclick="runEditorAI('rewrite')">Improve writing</button>
+                  <button onclick="runEditorAI('summarize')">Summarize</button>
+                  <button onclick="runEditorAI('grammar')">Ask question</button>
+                </div>
+                <div id="editor-ai-output">AI results will appear here.</div>
+              </div>
+
+              <!-- Word Count -->
+              <div class="tool-item enabled" style="display:flex; align-items:center; gap:12px; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px;">
+                <div class="tool-icon" style="color:#10b981;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
+                </div>
+                <div class="tool-text" style="flex:1;">
+                  <div style="font-weight:500; font-size:14px; color:#111827;">Word Count</div>
+                  <div style="font-size:12px; color:#6b7280;">
+                    <span id="editor-word-count">0</span> words, <span id="editor-char-count">0</span> chars
+                  </div>
+                </div>
+              </div>
+
+              <!-- Export DOCX -->
+              <div class="tool-item enabled" onclick="saveEditorFile()" style="display:flex; align-items:center; gap:12px; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer;" title="Export as DOCX">
+                <div class="tool-icon" style="color:#2563eb;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                </div>
+                <div class="tool-text" style="flex:1;">
+                  <div style="font-weight:500; font-size:14px; color:#111827;">Export DOCX</div>
+                  <div style="font-size:12px; color:#6b7280;">Save edited file</div>
+                </div>
+                <span class="tool-badge badge-active" style="font-size:10px; background:#dbeafe; color:#2563eb; padding:2px 6px; border-radius:12px; font-weight:600;">Active</span>
+              </div>
+
+              <!-- Export PDF (Disabled) -->
+              <div class="tool-item disabled" style="display:flex; align-items:center; gap:12px; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; opacity:0.6; cursor:not-allowed;" title="Coming Soon">
+                <div class="tool-icon" style="color:#ef4444;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                </div>
+                <div class="tool-text" style="flex:1;">
+                  <div style="font-weight:500; font-size:14px; color:#111827;">Export PDF</div>
+                  <div style="font-size:12px; color:#6b7280;">Coming soon</div>
+                </div>
+                <span class="tool-badge badge-soon" style="font-size:10px; background:#fee2e2; color:#ef4444; padding:2px 6px; border-radius:12px; font-weight:600;">Soon</span>
+              </div>
+
+              <!-- Advanced Review (Disabled) -->
+              <div class="tool-item disabled" style="display:flex; align-items:center; gap:12px; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; opacity:0.6; cursor:not-allowed;" title="Coming Soon">
+                <div class="tool-icon" style="color:#8b5cf6;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                </div>
+                <div class="tool-text" style="flex:1;">
+                  <div style="font-weight:500; font-size:14px; color:#111827;">Advanced Review</div>
+                  <div style="font-size:12px; color:#6b7280;">Track changes</div>
+                </div>
+                <span class="tool-badge badge-soon" style="font-size:10px; background:#f3e8ff; color:#8b5cf6; padding:2px 6px; border-radius:12px; font-weight:600;">Soon</span>
+              </div>
+
+              <div class="tool-item disabled" style="display:flex; align-items:center; gap:12px; padding:12px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; opacity:0.6; cursor:not-allowed;" title="Coming Soon">
+                <div class="tool-icon" style="color:#22d3ee;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11 3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                </div>
+                <div class="tool-text" style="flex:1;">
+                  <div style="font-weight:500; font-size:14px; color:#111827;">Grammar Check</div>
+                  <div style="font-size:12px; color:#6b7280;">Coming soon</div>
+                </div>
+                <span class="tool-badge badge-soon" style="font-size:10px; background:#ecfeff; color:#0891b2; padding:2px 6px; border-radius:12px; font-weight:600;">Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="editor-status-bar">
+          <span>Page 1</span>
+          <span id="editor-status-words">0 words</span>
+          <span>English</span>
+          <span>Zoom 100%</span>
+        </div>
       </div>
 
       <!-- DOC VIEWER -->
@@ -607,22 +769,177 @@
 
       <!-- AI -->
       <div id="ai" class="tab">
-        <textarea id="input"></textarea>
+        <aside class="ai-dash-sidebar">
+          <div class="ai-dash-brand">
+            <div class="ai-dash-mark">NC</div>
+            <div>
+              <strong>NeuroCore</strong>
+              <span>AI Suite</span>
+            </div>
+          </div>
+          <button class="ai-nav-pill active" type="button">AI Tools</button>
+          <button class="ai-nav-pill" type="button" onclick="showTab('editor')">Editor</button>
+          <button class="ai-nav-pill" type="button" onclick="showTab('dashboard')">Documents</button>
+          <button class="ai-nav-pill disabled" type="button" title="Coming Soon">Automations</button>
+        </aside>
 
-        <div class="ai-controls">
-          <select id="action">
-            <option value="summarize">Summarize</option>
-            <option value="rewrite">Rewrite</option>
-            <option value="grammar">Fix Grammar</option>
-          </select>
+        <main class="ai-dash-main">
+          <header class="ai-dash-hero">
+            <div>
+              <p class="ai-eyebrow">NeuroCore intelligence layer</p>
+              <h1>AI Tools</h1>
+              <h2>Smart AI Tools for Productivity</h2>
+              <p>Explore powerful AI tools to write, edit, analyze, and create content effortlessly.</p>
+            </div>
+            <div class="ai-search-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input id="ai-tool-search" type="search" placeholder="Search AI tools, documents..." oninput="filterAITools()" />
+            </div>
+          </header>
 
-          <button onclick="runAI()">⚡ Run AI</button>
-        </div>
+          <nav class="ai-category-tabs" aria-label="AI tool categories">
+            <button class="active" type="button" data-filter="all" onclick="setAIToolFilter(this)">All Tools</button>
+            <button type="button" data-filter="write" onclick="setAIToolFilter(this)">Write</button>
+            <button type="button" data-filter="edit" onclick="setAIToolFilter(this)">Edit</button>
+            <button type="button" data-filter="analyze" onclick="setAIToolFilter(this)">Analyze</button>
+            <button type="button" data-filter="summarize" onclick="setAIToolFilter(this)">Summarize</button>
+            <button type="button" data-filter="translate" onclick="setAIToolFilter(this)">Translate</button>
+            <button type="button" data-filter="create" onclick="setAIToolFilter(this)">Create</button>
+            <button type="button" data-filter="research" onclick="setAIToolFilter(this)">Research</button>
+          </nav>
 
-        <div id="output"></div>
+          <section class="ai-tools-grid" aria-label="AI tools">
+            <article class="ai-tool-card" data-tool-name="AI Writer" data-category="write create">
+              <div class="ai-card-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+              <h3>AI Writer</h3>
+              <p>Create first drafts, outlines, emails, and structured content.</p>
+              <button onclick="openAITool('rewrite', 'AI Writer')">Open</button>
+            </article>
 
-        <button onclick="applyToEditor()">Apply</button>
-        <button onclick="useEditorText()">Use Editor</button>
+            <article class="ai-tool-card" data-tool-name="Improve Writing" data-category="write edit">
+              <div class="ai-card-icon violet"><svg viewBox="0 0 24 24"><path d="m9 18 6-12"></path><path d="m4 14 4 4 4-4"></path><path d="m20 10-4-4-4 4"></path></svg></div>
+              <h3>Improve Writing</h3>
+              <p>Refine clarity, structure, and polish while keeping intent.</p>
+              <button onclick="openAITool('rewrite', 'Improve Writing')">Open</button>
+            </article>
+
+            <article class="ai-tool-card" data-tool-name="Summarize" data-category="summarize analyze">
+              <div class="ai-card-icon blue"><svg viewBox="0 0 24 24"><path d="M4 7h16"></path><path d="M4 12h12"></path><path d="M4 17h8"></path></svg></div>
+              <h3>Summarize</h3>
+              <p>Condense long documents into crisp, usable summaries.</p>
+              <button onclick="openAITool('summarize', 'Summarize')">Open</button>
+            </article>
+
+            <article class="ai-tool-card" data-tool-name="AI Chat Assistant" data-category="research analyze">
+              <div class="ai-card-icon"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"></path></svg></div>
+              <h3>AI Chat Assistant</h3>
+              <p>Ask questions, brainstorm directions, and explore document ideas.</p>
+              <button onclick="openAITool('rewrite', 'AI Chat Assistant')">Open</button>
+            </article>
+
+            <article class="ai-tool-card" data-tool-name="Translate" data-category="translate write">
+              <div class="ai-card-icon violet"><svg viewBox="0 0 24 24"><path d="M5 8h9"></path><path d="M9 4v4c0 5-2 8-5 10"></path><path d="M6 14c2 0 4-1 6-4"></path><path d="m14 20 4-9 4 9"></path><path d="M15.5 17h5"></path></svg></div>
+              <h3>Translate</h3>
+              <p>Convert selected text into another language with context.</p>
+              <button onclick="openAITool('rewrite', 'Translate')">Open</button>
+            </article>
+
+            <article class="ai-tool-card" data-tool-name="Grammar Check" data-category="edit write">
+              <div class="ai-card-icon blue"><svg viewBox="0 0 24 24"><path d="m9 11 3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
+              <h3>Grammar Check</h3>
+              <p>Fix grammar, capitalization, spacing, and basic writing issues.</p>
+              <button onclick="openAITool('grammar', 'Grammar Check')">Open</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="Tone Detector" data-category="analyze edit" title="Feature under development">
+              <div class="ai-card-icon"><svg viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="M3 12h18"></path><path d="m5 5 14 14"></path><path d="m19 5-14 14"></path></svg></div>
+              <h3>Tone Detector</h3>
+              <p>Identify tone, sentiment, and emotional signals in writing.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="Plagiarism Checker" data-category="analyze research" title="Feature under development">
+              <div class="ai-card-icon violet"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg></div>
+              <h3>Plagiarism Checker</h3>
+              <p>Review originality signals and source overlap risk.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="AI Image Generator" data-category="create" title="Feature under development">
+              <div class="ai-card-icon blue"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-4-4L5 21"></path></svg></div>
+              <h3>AI Image Generator</h3>
+              <p>Create visual assets and document illustrations.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="AI Table Generator" data-category="create analyze" title="Feature under development">
+              <div class="ai-card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M9 4v16"></path><path d="M15 4v16"></path></svg></div>
+              <h3>AI Table Generator</h3>
+              <p>Turn messy notes into clean tables and matrices.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="Ideas Generator" data-category="create write" title="Feature under development">
+              <div class="ai-card-icon violet"><svg viewBox="0 0 24 24"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M8 14a6 6 0 1 1 8 0c-1 1-1 2-1 3H9c0-1 0-2-1-3Z"></path></svg></div>
+              <h3>Ideas Generator</h3>
+              <p>Generate angles, hooks, topics, and creative directions.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+
+            <article class="ai-tool-card coming-soon" data-tool-name="Explain Like I'm 5" data-category="summarize research" title="Feature under development">
+              <div class="ai-card-icon blue"><svg viewBox="0 0 24 24"><path d="M12 17h.01"></path><path d="M9.1 9a3 3 0 1 1 5.8 1c-.8 1.2-2.4 1.6-2.7 3"></path><circle cx="12" cy="12" r="10"></circle></svg></div>
+              <h3>Explain Like I'm 5</h3>
+              <p>Simplify complex text into plain, friendly explanations.</p>
+              <button type="button" disabled>Coming Soon</button>
+            </article>
+          </section>
+
+          <footer class="ai-bottom-notice">
+            <span>New AI Tools Coming Soon!</span>
+            <button type="button" title="Request a Tool">Request a Tool</button>
+          </footer>
+        </main>
+
+        <aside class="ai-dash-right">
+          <section class="ai-side-card">
+            <h3>Recent Activity</h3>
+            <div class="ai-activity-item"><span>AI Writer</span><strong>Generated content</strong><em>2m ago</em></div>
+            <div class="ai-activity-item"><span>Summarize</span><strong>Processed document</strong><em>1h ago</em></div>
+            <div class="ai-activity-item"><span>Grammar Check</span><strong>Completed</strong><em>1h ago</em></div>
+          </section>
+
+          <section class="ai-side-card">
+            <h3>Quick Actions</h3>
+            <button class="ai-quick-card" type="button" onclick="openAITool('rewrite', 'AI Chat Assistant')">Start New Chat</button>
+            <button class="ai-quick-card" type="button" onclick="showUploadModal()">Upload Document</button>
+            <button class="ai-quick-card disabled" type="button" title="Feature under development">AI Note Taker</button>
+            <button class="ai-quick-card disabled" type="button" title="Feature under development">Generate Report</button>
+          </section>
+
+          <section class="ai-premium-card">
+            <h3>Go Premium</h3>
+            <p>Unlock all AI tools and advanced features</p>
+            <button type="button">Upgrade Now</button>
+          </section>
+
+          <section class="ai-runner-card">
+            <h3 id="ai-runner-title">Tool Workspace</h3>
+            <textarea id="input" placeholder="Enter text or use editor content..."></textarea>
+            <div class="ai-controls">
+              <select id="action">
+                <option value="summarize">Summarize</option>
+                <option value="rewrite">Rewrite</option>
+                <option value="grammar">Fix Grammar</option>
+              </select>
+              <button onclick="runAI()">Run AI</button>
+            </div>
+            <div id="output"></div>
+            <div class="ai-runner-actions">
+              <button onclick="useEditorText()">Use Editor</button>
+              <button onclick="applyToEditor()">Apply</button>
+            </div>
+          </section>
+        </aside>
       </div>
 
 
