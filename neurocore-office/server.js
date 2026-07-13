@@ -64,6 +64,41 @@ app.get("/pdfs", (req, res) => {
     });
 
 });
+// List Protected PDFs
+app.get("/protected-pdfs", (req, res) => {
+
+    const folder = path.join(__dirname, "protected");
+
+    if (!fs.existsSync(folder)) {
+        return res.json({
+            success: true,
+            total: 0,
+            files: []
+        });
+    }
+
+    fs.readdir(folder, (err, files) => {
+
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: "Unable to read protected folder."
+            });
+        }
+
+        const pdfs = files.filter(file =>
+            file.toLowerCase().endsWith(".pdf")
+        );
+
+        res.json({
+            success: true,
+            total: pdfs.length,
+            files: pdfs
+        });
+
+    });
+
+});
 //Move PDFs API
 app.post("/pdf/move", (req, res) => {
 
@@ -75,8 +110,7 @@ app.post("/pdf/move", (req, res) => {
             message: "Filename and folder are required."
         });
     }
-
-    if (!ALLOWED_FOLDERS.includes(folder)) {
+     if (!ALLOWED_FOLDERS.includes(folder)) {
         return res.status(400).json({
             success: false,
             message: "Invalid folder. Use: " + ALLOWED_FOLDERS.join(", ")
@@ -179,12 +213,63 @@ app.get("/pdf/:filename", (req, res) => {
     res.sendFile(filePath);
 
 });
-//Delete PDFs
+
+//Delete uploaded PDFs
 app.delete("/pdf/:filename", (req, res) => {
 
     const filename = req.params.filename;
-
     const filePath = path.join(__dirname, "uploads", filename);
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+            success: false,
+            message: "PDF not found."
+        });
+    }
+
+    fs.unlink(filePath, (err) => {
+
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: "Unable to delete PDF."
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "PDF deleted successfully."
+        });
+
+    });
+
+});
+// Open Protected PDF API
+app.get("/protected/:filename", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const filePath = path.join(__dirname, "protected", filename);
+
+    if (!fs.existsSync(filePath)) {
+
+        return res.status(404).json({
+            success: false,
+            message: "Protected PDF not found."
+        });
+
+    }
+
+    res.sendFile(filePath);
+
+});
+
+//Delete Protected PDFs
+app.delete("/protected/:filename", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const filePath = path.join(__dirname, "protected", filename);
 
     if (!fs.existsSync(filePath)) {
 
@@ -384,6 +469,81 @@ app.post("/pdf/protect", (req, res) => {
                 success: true,
                 message: "PDF encrypted successfully. Saved to protected folder.",
                 file: path.basename(output)
+            });
+
+        }
+    );
+
+});
+
+// Remove password / decrypt protected PDF API
+app.post("/pdf/unprotect", (req, res) => {
+
+    const { filename, password } = req.body;
+
+    if (!filename || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Filename and password are required."
+        });
+    }
+
+    const protectedPath = path.join(__dirname, "protected", filename);
+
+    if (!fs.existsSync(protectedPath)) {
+        return res.status(404).json({
+            success: false,
+            message: "Protected PDF not found."
+        });
+    }
+
+    const uploadsDir = path.join(__dirname, "uploads");
+    fs.mkdirSync(uploadsDir, { recursive: true });
+
+    // Strip the _protected suffix if present so we restore original name
+    const baseName = filename.endsWith("_protected.pdf")
+        ? filename.replace("_protected.pdf", ".pdf")
+        : filename;
+
+    const outputPath = path.join(uploadsDir, baseName);
+
+    execFile(
+        "qpdf",
+        [
+            "--password=" + password,
+            "--decrypt",
+            protectedPath,
+            outputPath
+        ],
+        (error, stdout, stderr) => {
+
+            if (error) {
+                const message =
+                    stderr && stderr.toLowerCase().includes("incorrect password")
+                        ? "Invalid Password please try again later"
+                        : stderr || error.message;
+
+                return res.status(400).json({
+                    success: false,
+                    message
+                });
+            }
+
+            fs.unlink(protectedPath, (unlinkError) => {
+
+                if (unlinkError) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "File decrypted, but protected copy could not be removed."
+                    });
+                }
+
+                res.json({
+                    success: true,
+                    message: "Password removed. File moved to uploads and removed from protected folder.",
+                    file: path.basename(outputPath)
+                });
+
             });
 
         }
