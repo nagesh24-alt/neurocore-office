@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <!--<link rel="stylesheet" href="style.css">-->
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="dark-theme">
@@ -98,8 +98,50 @@
                                 <span class="badge" id="recent-count">0 files</span>
                             </div>
                             <div class="card-body">
-                                <div id="pdfList" class="file-list">
-                                    <!-- Dynamic content -->
+                                <div class="dashboard-table-container">
+
+                                    <table id="pdfTable">
+
+                                        <thead>
+
+                                            <tr>
+
+                                                <th>
+                                                    <input type="checkbox" id="selectAll">
+                                                </th>
+
+                                                <th>PDF</th>
+
+                                                <th>Name</th>
+
+                                                <th>Tags</th>
+
+                                                <th>Size</th>
+
+                                                <th>Pages</th>
+
+                                                <th>Modified</th>
+
+                                                <th>Owner</th>
+
+                                                <th>Status</th>
+
+                                                <th>open</th>
+
+                                                <th>Actions</th>
+
+                                            </tr>
+
+                                        </thead>
+
+                                        <tbody id="pdfTableBody">
+
+                                            <!-- Dynamic rows -->
+
+                                        </tbody>
+
+                                    </table>
+
                                 </div>
                             </div>
                         </div>
@@ -197,6 +239,161 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- Protect PDF Modal -->
+    <div id="protect-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Protect PDF</h2>
+                <button class="modal-close-btn" onclick="closeProtectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="protect-pdf-form" onsubmit="submitProtectPDF(event)">
+                    <div class="form-group">
+                        <label for="protect-password">Password</label>
+                        <input type="password" id="protect-password" placeholder="Enter password to protect PDF"
+                            required>
+                    </div>
+
+                    <div class="form-checkbox-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="allow-print" checked>
+                            <span class="checkbox-checkmark"></span>
+                            Allow Printing
+                        </label>
+                    </div>
+
+                    <div class="form-checkbox-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="allow-copy" checked>
+                            <span class="checkbox-checkmark"></span>
+                            Allow Copying
+                        </label>
+                    </div>
+
+                    <div class="form-checkbox-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="allow-edit" checked>
+                            <span class="checkbox-checkmark"></span>
+                            Allow Editing
+                        </label>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn btn-secondary"
+                            onclick="closeProtectModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary">Protect PDF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename PDF Modal -->
+    <div id="rename-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Rename PDF</h2>
+                <button class="modal-close-btn" onclick="closeRenameModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="rename-pdf-form" onsubmit="submitRenamePDF(event)">
+                    <div class="form-group">
+                        <label for="rename-newname">New Name</label>
+                        <input type="text" id="rename-newname" placeholder="Enter new name" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn btn-secondary"
+                            onclick="closeRenameModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary">Rename</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move PDF Modal -->
+    <div id="move-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📂 Move PDF to Folder</h2>
+                <button class="modal-close-btn" onclick="closeMoveModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="move-pdf-form" onsubmit="submitMovePDF(event)">
+                    <div class="form-group">
+                        <label for="move-folder">Select Category Folder</label>
+                        <select id="move-folder" required>
+                            <option value="" disabled selected>Select a folder...</option>
+                            <option value="Books">📚 Books</option>
+                            <option value="College">🎓 College</option>
+                            <option value="Notes">📝 Notes</option>
+                            <option value="Projects">💻 Projects</option>
+                            <option value="Archive">🗄️ Archive</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn btn-secondary"
+                            onclick="closeMoveModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary">Move PDF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy PDF Modal -->
+    <div id="copy-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📄 Copy PDF to Folder</h2>
+                <button class="modal-close-btn" onclick="closeCopyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="copy-pdf-form" onsubmit="submitCopyPDF(event)">
+                    <div class="form-group">
+                        <label for="copy-folder">Select Category Folder</label>
+                        <select id="copy-folder" required>
+                            <option value="" disabled selected>Select a folder...</option>
+                            <option value="Books">📚 Books</option>
+                            <option value="College">🎓 College</option>
+                            <option value="Notes">📝 Notes</option>
+                            <option value="Projects">💻 Projects</option>
+                            <option value="Archive">🗄️ Archive</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn btn-secondary"
+                            onclick="closeCopyModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary">Copy PDF</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Tags Modal -->
+    <div id="tags-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🏷️ Edit Tags for <span id="tags-modal-filename"></span></h2>
+                <button class="modal-close-btn" onclick="closeTagsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-tags-form" onsubmit="submitEditTags(event)">
+                    <div class="form-group">
+                        <label for="tags-input">Tags (comma-separated)</label>
+                        <input type="text" id="tags-input" placeholder="e.g. college, homework, important">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="action-btn btn-secondary"
+                            onclick="closeTagsModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary">Save Tags</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

@@ -1,9 +1,78 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+
+const DATA_DIR = path.join(__dirname, "data");
+const TAGS_FILE = path.join(__dirname, "data", "tags.json");
+
+// Ensure tag storage exists before any tag API reads or writes.
+function ensureTagsFile() {
+    try {
+        if (!fs.existsSync(DATA_DIR)) {
+            fs.mkdirSync(DATA_DIR, { recursive: true });
+        }
+
+    } catch (err) {
+        console.error("Error creating tags data directory:", err);
+        return false;
+    }
+
+    try {
+        if (!fs.existsSync(TAGS_FILE)) {
+            fs.writeFileSync(TAGS_FILE, JSON.stringify({}, null, 4), "utf8");
+        }
+
+        return true;
+    } catch (err) {
+        console.error("Error creating tags file:", err);
+        return false;
+    }
+}
+
+// Log resolved paths at startup to diagnose duplicate-folder or cwd issues.
+function logTagStorageDebugInfo() {
+    console.log("[tags] __dirname:", __dirname);
+    console.log("[tags] process.cwd():", process.cwd());
+    console.log("[tags] TAGS_FILE:", TAGS_FILE);
+    console.log("[tags] data directory exists:", fs.existsSync(DATA_DIR));
+    console.log("[tags] tags.json exists:", fs.existsSync(TAGS_FILE));
+}
+
+ensureTagsFile();
+logTagStorageDebugInfo();
+
+// Read tags from JSON file. Return an empty object if the file is missing,
+// empty, unreadable, or contains invalid JSON.
+function readTags() {
+    if (!ensureTagsFile()) {
+        return {};
+    }
+
+    try {
+        const raw = fs.readFileSync(TAGS_FILE, "utf8").trim();
+        return raw ? JSON.parse(raw) : {};
+    } catch (err) {
+        console.error("Error reading tags:", err);
+        return {};
+    }
+}
+
+// Write tags to tags.json without allowing storage errors to crash the server.
+function writeTags(tagsData) {
+    if (!ensureTagsFile()) {
+        return false;
+    }
+
+    try {
+        fs.writeFileSync(TAGS_FILE, JSON.stringify(tagsData || {}, null, 4), "utf8");
+        return true;
+    } catch (err) {
+        console.error("Error writing tags:", err);
+        return false;
+    }
+}
 const { execFile } = require("child_process");
 const upload = require("./middleware/uploadMiddleware");
-
 const app = express();
 
 const ALLOWED_FOLDERS = ["Books", "College", "Notes", "Projects", "Archive"];
@@ -39,6 +108,9 @@ app.post("/upload", (req, res) => {
 });
 //list uploaded PDFs API
 app.get("/pdfs", (req, res) => {
+    console.log("GET /pdfs route executed");
+    console.log("__dirname:", __dirname);
+    console.log("process.cwd():", process.cwd());
 
     const uploadFolder = path.join(__dirname, "uploads");
 
@@ -50,10 +122,33 @@ app.get("/pdfs", (req, res) => {
                 message: "Unable to read uploads folder."
             });
         }
+        //read all tags
+        const allTags = readTags();
+        console.log("allTags:", allTags);
 
-        const pdfFiles = files.filter(file =>
-            file.toLowerCase().endsWith(".pdf")
-        );
+        const pdfFiles = files.filter(filename => filename.toLowerCase().endsWith(".pdf")).map(filename => {
+
+        const filePath = path.join(uploadFolder, filename);
+        const stats = fs.statSync(filePath);
+        console.log("Tags for", filename, ":", allTags[filename]);
+
+        return {
+            name: filename,
+
+            size: stats.size,
+
+            modified: stats.mtime,
+
+            owner: "You",
+
+            status: "Normal",
+
+            tags: allTags[filename] || []
+        };
+
+    });
+
+        console.log("pdfFiles:", pdfFiles);
 
         res.json({
             success: true,
@@ -110,7 +205,7 @@ app.post("/pdf/move", (req, res) => {
             message: "Filename and folder are required."
         });
     }
-     if (!ALLOWED_FOLDERS.includes(folder)) {
+    if (!ALLOWED_FOLDERS.includes(folder)) {
         return res.status(400).json({
             success: false,
             message: "Invalid folder. Use: " + ALLOWED_FOLDERS.join(", ")
@@ -234,6 +329,13 @@ app.delete("/pdf/:filename", (req, res) => {
                 success: false,
                 message: "Unable to delete PDF."
             });
+        }
+
+        // Clean up tags for this file
+        const allTags = readTags();
+        if (allTags[filename]) {
+            delete allTags[filename];
+            writeTags(allTags);
         }
 
         res.json({
@@ -365,6 +467,14 @@ app.patch("/pdf/:filename", (req, res) => {
             });
         }
 
+        // Rename tags in tags.json
+        const allTags = readTags();
+        if (allTags[oldFilename]) {
+            allTags[newFilename] = allTags[oldFilename];
+            delete allTags[oldFilename];
+            writeTags(allTags);
+        }
+
         res.json({
             success: true,
             message: "PDF renamed successfully."
@@ -465,6 +575,13 @@ app.post("/pdf/protect", (req, res) => {
                 });
             }
 
+            // Remove the original unprotected file
+            fs.unlink(input, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error("Failed to delete original file after protection:", unlinkErr);
+                }
+            });
+
             res.json({
                 success: true,
                 message: "PDF encrypted successfully. Saved to protected folder.",
@@ -550,9 +667,390 @@ app.post("/pdf/unprotect", (req, res) => {
     );
 
 });
+// PDF Permission Restrictions API
+app.post("/pdf/permissions", (req, res) => {
+
+    const {
+        filename,
+        password,
+        allowPrint,
+        allowCopy,
+        allowEdit
+    } = req.body;
+
+    // Validate filename
+    if (!filename || typeof filename !== "string" || path.basename(filename) !== filename || !filename.toLowerCase().endsWith(".pdf")) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid filename."
+        });
+    }
+
+    // Validate password
+    if (!password) {
+        return res.status(400).json({
+            success: false,
+            message: "Missing password."
+        });
+    }
+
+    const input = path.join(__dirname, "uploads", filename);
+
+    const protectedDir = path.join(__dirname, "protected");
+    const output = path.join(
+        protectedDir,
+        filename.replace(".pdf", "_protected.pdf")
+    );
+
+    // Validate if PDF exists
+    if (!fs.existsSync(input)) {
+        return res.status(404).json({
+            success: false,
+            message: "PDF not found."
+        });
+    }
+
+    fs.mkdirSync(protectedDir, { recursive: true });
+
+    // Ensure owner password is distinct from user password so restrictions are enforced
+    const ownerPassword = "NeuroCoreOfficeOwner123";
+
+    // Default permissions
+    let printPermission = "--print=full";
+    let modifyPermission = "--modify=all";
+    let extractPermission = "--extract=y";
+
+    if (!allowPrint)
+        printPermission = "--print=none";
+
+    if (!allowEdit)
+        modifyPermission = "--modify=none";
+
+    if (!allowCopy)
+        extractPermission = "--extract=n";
+
+    execFile(
+        "qpdf",
+        [
+            "--encrypt",
+            password,
+            ownerPassword,
+            "256",
+            printPermission,
+            modifyPermission,
+            extractPermission,
+            "--",
+            input,
+            output
+        ],
+        (error, stdout, stderr) => {
+
+            if (error) {
+                console.error("QPDF Error:", stderr || error.message);
+                if (error.code === "ENOENT") {
+                    return res.status(500).json({
+                        success: false,
+                        message: "QPDF execution failure."
+                    });
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: "Permission application failure."
+                });
+            }
+
+            // Remove the original unprotected file
+            fs.unlink(input, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error("Failed to delete original file after protection:", unlinkErr);
+                }
+            });
+
+            res.json({
+                success: true,
+                message: "PDF protected and permissions applied successfully.",
+                file: path.basename(output)
+            });
+
+        }
+    );
+
+});
+
+// Change Password API
+app.post("/pdf/change-password", (req, res) => {
+
+    const { filename, currentPassword, newPassword } = req.body;
+
+    // Validation
+    if (!filename || !currentPassword || !newPassword) {
+        return res.status(400).json({
+            success: false,
+            message: "Filename, current password and new password are required."
+        });
+    }
+
+    const protectedDir = path.join(__dirname, "protected");
+    const tempDir = path.join(__dirname, "temp");
+
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    const input = path.join(protectedDir, filename);
+
+    const tempFile = path.join(
+        tempDir,
+        filename.replace("_protected.pdf", "_temp.pdf")
+    );
+
+    // Check whether the protected PDF exists
+    if (!fs.existsSync(input)) {
+        return res.status(404).json({
+            success: false,
+            message: "Protected PDF not found."
+        });
+    }
+
+    // Step 1: Decrypt using current password
+    execFile(
+        "qpdf",
+        [
+            `--password=${currentPassword}`,
+            "--decrypt",
+            input,
+            tempFile
+        ],
+        (decryptError) => {
+
+            if (decryptError) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Current password is incorrect."
+                });
+            }
+
+            // Step 2: Encrypt again with the new password and stable owner password
+            const ownerPassword = "NeuroCoreOfficeOwner123";
+            execFile(
+                "qpdf",
+                [
+                    "--encrypt",
+                    newPassword,
+                    ownerPassword,
+                    "256",
+                    "--",
+                    tempFile,
+                    input
+                ],
+                (encryptError) => {
+
+                    // Delete temporary file
+                    if (fs.existsSync(tempFile)) {
+                        fs.unlinkSync(tempFile);
+                    }
+
+                    if (encryptError) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Unable to change password."
+                        });
+                    }
+
+                    res.json({
+                        success: true,
+                        message: "Password changed successfully."
+                    });
+
+                }
+            );
+
+        }
+    );
+
+});
+
+// List PDFs in folder API
+app.get("/pdf/folder/:folder", (req, res) => {
+    const { folder } = req.params;
+
+    if (!ALLOWED_FOLDERS.includes(folder)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid folder name."
+        });
+    }
+
+    const folderPath = path.join(__dirname, "documents", folder);
+
+    if (!fs.existsSync(folderPath)) {
+        return res.json({
+            success: true,
+            total: 0,
+            files: []
+        });
+    }
+
+    fs.readdir(folderPath, (err, files) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: "Unable to read folder."
+            });
+        }
+
+        const pdfFiles = files.filter(file =>
+            file.toLowerCase().endsWith(".pdf")
+        );
+
+        res.json({
+            success: true,
+            total: pdfFiles.length,
+            files: pdfFiles
+        });
+    });
+});
+
+// Open PDF from folder API
+app.get("/pdf/folder/:folder/:filename", (req, res) => {
+    const { folder, filename } = req.params;
+
+    if (!ALLOWED_FOLDERS.includes(folder)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid folder name."
+        });
+    }
+
+    const filePath = path.join(__dirname, "documents", folder, filename);
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+            success: false,
+            message: "PDF not found."
+        });
+    }
+
+    res.sendFile(filePath);
+});
+// =============================
+// Get Tags
+// =============================
+
+app.get("/pdf/:filename/tags", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const allTags = readTags();
+
+    res.json({
+
+        success: true,
+
+        filename,
+
+        tags: allTags[filename] || []
+
+    });
+
+});
+// =============================
+// Save Tags
+// =============================
+app.post("/pdf/:filename/tags", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const { tags } = req.body;
+
+    if (!Array.isArray(tags)) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message: "Tags must be an array."
+
+        });
+
+    }
+
+    const allTags = readTags();
+
+    allTags[filename] = tags;
+
+    writeTags(allTags);
+
+    res.json({
+
+        success: true,
+
+        message: "Tags saved successfully."
+
+    });
+
+});
+// =============================
+// Update Tags
+// =============================
+
+app.patch("/pdf/:filename/tags", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const { tags } = req.body;
+
+    if (!Array.isArray(tags)) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message: "Tags must be an array."
+
+        });
+
+    }
+
+    const allTags = readTags();
+
+    allTags[filename] = tags;
+
+    writeTags(allTags);
+
+    res.json({
+
+        success: true,
+
+        message: "Tags updated successfully."
+
+    });
+
+});
+// =============================
+// Delete Tags
+// =============================
+
+app.delete("/pdf/:filename/tags", (req, res) => {
+
+    const filename = req.params.filename;
+
+    const allTags = readTags();
+
+    delete allTags[filename];
+
+    writeTags(allTags);
+
+    res.json({
+
+        success: true,
+
+        message: "Tags deleted successfully."
+
+    });
+
+});
 //Start the server
 const PORT = 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 NeuroCore Office running at http://localhost:${PORT}`);
+    console.log(`🚀 NeuroCore Office running at http://localhost:${PORT}`);
 });
