@@ -1,0 +1,1390 @@
+/* ==========================================================================
+   NEUROCORE OFFICE — PROFESSIONAL PDF VIEWER & EDITOR WORKSPACE
+   Pixel-Perfect Match to NeuroCore Dark + Red Design System
+   ========================================================================== */
+
+:root {
+    --bg-app: #0d0d10;
+    --bg-sidebar: #121215;
+    --bg-panel: #16161a;
+    --bg-card: #1c1c22;
+    --bg-card-hover: #26262e;
+    --bg-stage: #18181c;
+    --border-color: #232329;
+    --border-subtle: #1c1c21;
+    --border-highlight: #2f2f38;
+    
+    --accent-red: #ef4444;
+    --accent-red-hover: #dc2626;
+    --accent-red-glow: rgba(239, 68, 68, 0.35);
+    --accent-red-subtle: rgba(239, 68, 68, 0.12);
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-orange: #f97316;
+    --accent-purple: #8b5cf6;
+    
+    --text-primary: #ffffff;
+    --text-secondary: #d4d4d8;
+    --text-muted: #8e8e96;
+    --text-dim: #52525b;
+
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --left-sidebar-w: 220px;
+    --pages-panel-w: 190px;
+    --right-tools-w: 290px;
+    --top-bar-h: 56px;
+    --doc-header-h: 64px;
+    --ribbon-h: 86px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg-app);
+    font-family: var(--font-main);
+    color: var(--text-primary);
+    font-size: 13px;
+    user-select: none;
+}
+
+/* ==========================================================================
+   APP CONTAINER
+   ========================================================================== */
+
+.pdf-app-root {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg-app);
+}
+
+/* ==========================================================================
+   1. TOP GLOBAL NAVIGATION BAR
+   ========================================================================== */
+
+.nc-topbar {
+    height: var(--top-bar-h);
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
+}
+
+.nc-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nc-logo-mark {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 18px;
+    box-shadow: 0 2px 10px var(--accent-red-glow);
+    text-decoration: none;
+}
+
+.nc-brand-text-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.nc-brand-title {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: #ffffff;
+    line-height: 1.15;
+}
+
+.nc-brand-subtitle {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0.2px;
+}
+
+.nc-topbar-center {
+    flex: 1;
+    max-width: 440px;
+    margin: 0 24px;
+}
+
+.nc-search-pill {
+    background: #18181d;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.nc-search-pill:focus-within {
+    border-color: var(--accent-red);
+    background: #1f1f26;
+    box-shadow: 0 0 0 2px var(--accent-red-glow);
+}
+
+.nc-search-icon {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.nc-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 12.5px;
+    width: 100%;
+    font-family: var(--font-main);
+}
+
+.nc-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.nc-search-kbd {
+    background: #25252c;
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nc-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.nc-ai-assist-btn {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.15s ease;
+}
+
+.nc-ai-assist-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--accent-red);
+    color: #ffffff;
+    box-shadow: 0 0 12px var(--accent-red-glow);
+}
+
+.nc-top-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.nc-top-icon-btn:hover {
+    color: var(--text-primary);
+    background: #22222a;
+}
+
+.nc-user-profile-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 10px 4px 6px;
+    background: #18181d;
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    cursor: pointer;
+}
+
+.nc-user-avatar-circle {
+    width: 26px;
+    height: 26px;
+    background: linear-gradient(135deg, #71717a, #3f3f46);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.nc-user-meta-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.nc-user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.15;
+}
+
+.nc-user-plan {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   2. MAIN TWO-TIER WORKSPACE WRAPPER
+   ========================================================================== */
+
+.nc-workspace-root {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ==========================================================================
+   3. LEFT PERMANENT SIDEBAR DRAWER (Full Height)
+   ========================================================================== */
+
+.nc-left-nav-drawer {
+    width: var(--left-sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 12px;
+    gap: 8px;
+    z-index: 60;
+    overflow-y: auto;
+}
+
+.nc-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    margin-bottom: 6px;
+}
+
+.nc-back-btn:hover {
+    color: var(--text-primary);
+    background: #1c1c22;
+}
+
+.nc-nav-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.nc-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    width: 100%;
+}
+
+.nc-nav-item:hover {
+    color: var(--text-primary);
+    background: #1c1c22;
+}
+
+.nc-nav-item.active {
+    background: #ef4444;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 10px var(--accent-red-glow);
+}
+
+.nc-nav-item i {
+    font-size: 13px;
+    width: 16px;
+    text-align: center;
+}
+
+.nc-sidebar-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 8px 0;
+}
+
+.nc-recent-header {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 4px 8px;
+    margin-top: 4px;
+}
+
+.nc-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nc-recent-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    border: 1px solid transparent;
+}
+
+.nc-recent-item:hover {
+    background: #1c1c22;
+    color: #ffffff;
+}
+
+.nc-recent-item.active {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.nc-recent-item i {
+    color: #ef4444;
+    font-size: 12px;
+}
+
+.nc-storage-widget {
+    margin-top: auto;
+    background: #18181e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nc-storage-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nc-storage-icon {
+    color: var(--accent-red);
+    font-size: 14px;
+}
+
+.nc-storage-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.nc-storage-values {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.nc-storage-bar-bg {
+    width: 100%;
+    height: 4px;
+    background: #27272e;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.nc-storage-bar-fill {
+    width: 25%;
+    height: 100%;
+    background: var(--accent-red);
+    border-radius: 2px;
+}
+
+/* ==========================================================================
+   4. MAIN WORKSPACE STAGE (Center + Right Columns)
+   ========================================================================== */
+
+.nc-main-stage-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-app);
+}
+
+/* --- Document Info & Header Actions Bar --- */
+.nc-doc-header-bar {
+    height: var(--doc-header-h);
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 50;
+}
+
+.nc-doc-info-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.nc-pdf-big-icon {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 18px;
+    box-shadow: 0 2px 8px var(--accent-red-glow);
+}
+
+.nc-doc-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nc-doc-title-text {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: var(--font-heading);
+    letter-spacing: -0.2px;
+}
+
+.nc-doc-metadata-text {
+    font-size: 11.5px;
+    color: var(--text-muted);
+}
+
+.nc-doc-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nc-btn-open {
+    background: #202026;
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.nc-btn-open:hover {
+    background: #282830;
+    border-color: var(--border-highlight);
+}
+
+.nc-btn-save {
+    background: #ef4444;
+    border: 1px solid #dc2626;
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 10px var(--accent-red-glow);
+    transition: all 0.15s ease;
+}
+
+.nc-btn-save:hover {
+    background: #dc2626;
+}
+
+.nc-btn-save-as {
+    background: #202026;
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.nc-btn-save-as:hover {
+    background: #282830;
+    border-color: var(--border-highlight);
+}
+
+.nc-btn-share {
+    background: #ef4444;
+    border: 1px solid #dc2626;
+    color: #ffffff;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.nc-btn-share:hover {
+    background: #dc2626;
+}
+
+/* --- Ribbon Toolbar Area --- */
+.nc-ribbon-bar {
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 40;
+}
+
+.nc-ribbon-tabs-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.nc-r-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nc-r-tab:hover {
+    color: #ffffff;
+}
+
+.nc-r-tab.active {
+    color: #ef4444;
+    border-bottom-color: #ef4444;
+}
+
+.nc-ribbon-tools-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    gap: 4px;
+    overflow-x: auto;
+    height: 52px;
+}
+
+.nc-r-tool {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    gap: 3px;
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+    height: 42px;
+    min-width: 44px;
+}
+
+.nc-r-tool i {
+    font-size: 13px;
+}
+
+.nc-r-tool:hover {
+    background: #202026;
+    color: #ffffff;
+    border-color: var(--border-color);
+}
+
+.nc-r-tool.active {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   5. WORKSPACE THREE-COLUMN BODY (Pages + Canvas + Right Tools)
+   ========================================================================== */
+
+.nc-content-columns-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- Left Column: Pages / Thumbnails Drawer --- */
+.nc-pages-panel {
+    width: var(--pages-panel-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 30;
+    transition: width 0.2s ease;
+}
+
+.nc-pages-panel.collapsed {
+    width: 0;
+    border-right: none;
+}
+
+.nc-pages-header {
+    height: 38px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+}
+
+.nc-pages-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.nc-pages-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nc-pages-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+}
+
+.nc-thumb-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.nc-thumb-box {
+    background: #ffffff;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    width: 100%;
+    aspect-ratio: 1 / 1.414;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.nc-thumb-item.active .nc-thumb-box {
+    border-color: #ef4444;
+    box-shadow: 0 0 12px var(--accent-red-glow);
+}
+
+.nc-thumb-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.nc-thumb-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.nc-thumb-item.active .nc-thumb-num {
+    color: #ef4444;
+}
+
+/* --- Center Column: PDF Canvas Viewport --- */
+.nc-center-canvas-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-stage);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Floating / Embedded Top Canvas Toolbar */
+.nc-canvas-top-bar {
+    height: 38px;
+    background: #141418;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    gap: 10px;
+    z-index: 20;
+}
+
+.nc-canvas-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nc-c-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.12s ease;
+}
+
+.nc-c-btn:hover {
+    color: #ffffff;
+    background: #22222a;
+}
+
+.nc-c-btn.active {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.nc-page-indicator-pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #ffffff;
+    padding: 0 6px;
+}
+
+.nc-zoom-indicator-pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #ffffff;
+    padding: 0 4px;
+    min-width: 44px;
+    text-align: center;
+}
+
+.nc-viewport-scroll {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 80px 20px;
+    gap: 24px;
+}
+
+.nc-pdf-page-container {
+    position: relative;
+    background: #ffffff;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    border-radius: 2px;
+}
+
+.nc-pdf-page-container.active-page {
+    box-shadow: 0 0 0 2px var(--accent-red), 0 10px 36px rgba(0, 0, 0, 0.7);
+}
+
+.nc-pdf-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.nc-pdf-text-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.25;
+    line-height: 1.0;
+    pointer-events: auto;
+    user-select: text;
+    z-index: 10;
+}
+
+.nc-pdf-text-layer span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    transition: background 0.15s ease;
+}
+
+.nc-pdf-text-layer span::selection {
+    background: rgba(59, 130, 246, 0.5);
+    color: transparent;
+}
+
+/* Mode-specific text hover */
+.nc-pdf-page-container.mode-edit-text .nc-pdf-text-layer {
+    z-index: 25;
+}
+
+.nc-pdf-page-container.mode-edit-text .nc-pdf-text-layer span:hover {
+    background: rgba(56, 189, 248, 0.35) !important;
+    outline: 1.5px dashed #38bdf8 !important;
+    cursor: pointer !important;
+    border-radius: 2px;
+}
+
+.nc-pdf-page-container.mode-highlight .nc-pdf-text-layer span:hover {
+    background: rgba(254, 240, 138, 0.45) !important;
+    cursor: crosshair !important;
+}
+
+.nc-pdf-page-container.mode-underline .nc-pdf-text-layer span:hover {
+    text-decoration: underline !important;
+    text-decoration-color: #ef4444 !important;
+    cursor: pointer !important;
+}
+
+.nc-pdf-page-container.mode-strikethrough .nc-pdf-text-layer span:hover {
+    text-decoration: line-through !important;
+    text-decoration-color: #ef4444 !important;
+    cursor: pointer !important;
+}
+
+.nc-pdf-anno-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.nc-pdf-anno-layer > * {
+    pointer-events: auto;
+}
+
+.nc-pdf-svg-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 12;
+}
+
+/* --- Right Column: Tools & Properties Panel --- */
+.nc-right-tools-panel {
+    width: var(--right-tools-w);
+    background: var(--bg-sidebar);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 30;
+    overflow-y: auto;
+}
+
+.nc-right-tabs-header {
+    height: 38px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+}
+
+.nc-rt-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nc-rt-tab:hover {
+    color: #ffffff;
+}
+
+.nc-rt-tab.active {
+    color: #ef4444;
+    border-bottom-color: #ef4444;
+}
+
+.nc-tools-group-box {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nc-tools-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.nc-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.nc-tools-grid.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.nc-tool-tile {
+    background: #1c1c22;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 10.5px;
+    text-align: center;
+    transition: all 0.15s ease;
+    min-height: 58px;
+    position: relative;
+}
+
+.nc-tool-tile:hover {
+    background: #25252e;
+    border-color: var(--border-highlight);
+    color: #ffffff;
+}
+
+.nc-tool-tile i {
+    font-size: 14px;
+}
+
+.nc-red-dot-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    background: #ef4444;
+    border-radius: 50%;
+}
+
+/* Modals, Popups, Toasts */
+.pdf-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.pdf-modal-card {
+    background: #18181c;
+    border: 1px solid #2e2e36;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+}
+
+.pdf-modal-header {
+    padding: 16px 20px;
+    background: #1f1f26;
+    border-bottom: 1px solid #2e2e36;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pdf-modal-body {
+    padding: 20px;
+}
+
+.pdf-modal-footer {
+    padding: 14px 20px;
+    background: #141418;
+    border-top: 1px solid #27272e;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.nc-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #18181e;
+    border: 1px solid #33333d;
+    border-left: 4px solid var(--accent-red);
+    color: #ffffff;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   FLOATING TEXT SELECTION QUICK ACTION BAR
+   ========================================================================== */
+
+.nc-text-select-toolbar {
+    position: fixed;
+    background: #18181f;
+    border: 1px solid #2f2f3d;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 1000;
+    animation: fadeInPopover 0.15s ease-out;
+    transform: translate(-50%, -100%);
+    margin-top: -10px;
+}
+
+@keyframes fadeInPopover {
+    from { opacity: 0; transform: translate(-50%, -90%); }
+    to { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+.nc-sel-btn {
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 16px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.nc-sel-btn:hover {
+    background: #272733;
+    color: #ffffff;
+}
+
+.nc-sel-btn:active {
+    transform: scale(0.96);
+}
+
+/* ==========================================================================
+   POPUP MENUS (Shapes, Stamps)
+   ========================================================================== */
+
+.nc-popup-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    background: #1c1c24;
+    border: 1px solid #2d2d38;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    padding: 6px;
+    min-width: 160px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nc-popup-item {
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #e2e8f0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s ease;
+}
+
+.nc-popup-item:hover {
+    background: #272734;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   COMMENT / STICKY NOTE POPOVER
+   ========================================================================== */
+
+.nc-comment-popover {
+    position: fixed;
+    background: #181820;
+    border: 1px solid #333342;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+    width: 260px;
+    padding: 12px;
+    z-index: 1000;
+}
+
+.nc-comment-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #282834;
+    padding-bottom: 6px;
+}
+
+.nc-comment-popover-body {
+    font-size: 12.5px;
+    color: #e2e8f0;
+    line-height: 1.45;
+    margin-bottom: 10px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.nc-comment-popover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ==========================================================================
+   ANNOTATIONS & TEXT EDIT RENDERING ON CANVAS
+   ========================================================================== */
+
+/* In-place Text Edit: Seamless whiteout patch + crisp rendered text */
+.pdf-anno-text-edit {
+    position: absolute;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    cursor: pointer;
+    user-select: text;
+    border-radius: 2px;
+    z-index: 20;
+    transition: outline 0.15s ease;
+}
+
+.pdf-anno-text-edit:hover {
+    outline: 1.5px dashed #3b82f6;
+}
+
+.pdf-anno-text-edit.selected {
+    outline: 2px solid #3b82f6;
+}
+
+/* Add-text Drag-and-drop / Rich Box */
+.pdf-anno-textbox {
+    position: absolute;
+    min-width: 60px;
+    min-height: 24px;
+    padding: 4px 8px;
+    border: 1px dashed transparent;
+    border-radius: 4px;
+    background: transparent;
+    cursor: move;
+    z-index: 25;
+    transition: border 0.15s ease, background 0.15s ease;
+}
+
+.pdf-anno-textbox:hover,
+.pdf-anno-textbox.selected {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.06);
+}
+
+.pdf-anno-textbox:focus {
+    outline: none;
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.06);
+}
+
+/* Highlight rect */
+.pdf-anno-highlight {
+    position: absolute;
+    background: rgba(254, 240, 138, 0.45);
+    mix-blend-mode: multiply;
+    pointer-events: auto;
+    cursor: pointer;
+    border-radius: 2px;
+    z-index: 14;
+    transition: opacity 0.15s ease;
+}
+
+.pdf-anno-highlight:hover {
+    opacity: 0.7;
+}
+
+/* Underline annotation */
+.pdf-anno-underline {
+    position: absolute;
+    border-bottom: 2px solid #ef4444;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 14;
+}
+
+/* Strikethrough annotation */
+.pdf-anno-strikethrough {
+    position: absolute;
+    border-top: 2px solid #ef4444;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 14;
+}
+
+/* Sticky Note badge */
+.pdf-anno-stickynote {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    background: #fb923c;
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+    z-index: 22;
+    transition: transform 0.15s ease;
+}
+
+.pdf-anno-stickynote:hover {
+    transform: scale(1.18);
+}
+
+/* Stamp badge */
+.pdf-anno-stamp {
+    position: absolute;
+    border: 3px solid #10b981;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transform: rotate(-10deg);
+    cursor: move;
+    z-index: 22;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+

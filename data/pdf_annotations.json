@@ -1,0 +1,14 @@
+{
+  "dgf.pdf": {
+    "1": [
+      {
+        "id": "test-1",
+        "type": "stamp",
+        "text": "APPROVED",
+        "color": "#10b981",
+        "x": 100,
+        "y": 100
+      }
+    ]
+  }
+}

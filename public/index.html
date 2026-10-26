@@ -40,6 +40,11 @@
             </div>
 
             <div class="nav-right-controls">
+                <button class="mongo-status-chip" id="mongoStatusChip" onclick="openMongoCompassModal()" title="MongoDB Compass Database Hub (mongodb://127.0.0.1:27017/)">
+                    <span class="mongo-status-dot" id="mongoStatusDot"></span>
+                    <i class="fas fa-database" style="color: #10b981; font-size: 11px;"></i>
+                    <span id="mongoStatusChipLabel">MongoDB: 27017</span>
+                </button>
                 <button class="nav-icon-btn" id="themeToggleBtn" title="Toggle Theme" onclick="toggleGrayscaleTheme()">
                     <i class="fas fa-sun"></i>
                 </button>
@@ -137,6 +142,11 @@
                                 <i class="far fa-file-pdf"></i>
                                 <span>PDF Documents</span>
                             </button>
+                            <button class="nav-item" id="nav-student-hub" onclick="openStudentHubSection()">
+                                <i class="fas fa-graduation-cap" style="color: #8b5cf6;"></i>
+                                <span>Student Hub</span>
+                                <span style="margin-left: auto; background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px;">ACADEMIC</span>
+                            </button>
                             <button class="nav-item" id="nav-docx" onclick="openDocxSection()">
                                 <i class="far fa-file-word"></i>
                                 <span>DOCX Documents</span>
@@ -144,6 +154,11 @@
                             <button class="nav-item" id="nav-pdf-tools" onclick="openPdfToolsHub()">
                                 <i class="fas fa-tools"></i>
                                 <span>PDF Tools</span>
+                            </button>
+                            <button class="nav-item" id="nav-mongodb" onclick="openMongoCompassModal()">
+                                <i class="fas fa-database" style="color: #10b981;"></i>
+                                <span>MongoDB Compass</span>
+                                <span style="margin-left: auto; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px;">LIVE</span>
                             </button>
                             <button class="nav-item" id="nav-document-editor" onclick="openDocxWordEditor()" title="Open DOCX Editor (Word) in new tab">
                                 <i class="fas fa-file-word" style="color: #2563eb;"></i>
@@ -540,6 +555,10 @@
                                 <h3>Quick Access</h3>
                             </div>
                             <div class="quick-access-grid">
+                                <button class="qa-tile qa-tile-featured" onclick="openStudentHubSection()" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(30, 41, 59, 0.8)); border-color: rgba(139, 92, 246, 0.35);">
+                                    <div class="qa-icon" style="color: #a78bfa;"><i class="fas fa-graduation-cap"></i></div>
+                                    <span class="qa-label" style="color: #f3e8ff; font-weight: 700;">Student Hub</span>
+                                </button>
                                 <button class="qa-tile" onclick="openPdfToolsHub()">
                                     <div class="qa-icon"><i class="far fa-file-pdf"></i></div>
                                     <span class="qa-label">PDF Tools</span>
@@ -924,51 +943,54 @@
                                 </div>
                             </div>
 
-                            <!-- Potential / Advanced Features Bottom Card -->
+                            <!-- Advanced PDF & Document Tools Card -->
                             <div class="pdf-advanced-features-card">
                                 <div class="pdf-advanced-header">
-                                    <h3>Potential / Advanced Features (Coming Soon)</h3>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                        <h3><i class="fas fa-bolt" style="color: #ef4444; margin-right: 8px;"></i> Advanced PDF & Document Tools</h3>
+                                        <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px;">8 Tools Active</span>
+                                    </div>
                                 </div>
                                 <div class="pdf-advanced-grid">
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('AI Summarize')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-sparkles"></i></div>
-                                        <div class="pdf-adv-title">AI Summarize</div>
-                                        <div class="pdf-adv-desc">Summarize PDF content</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;"><i class="fas fa-sparkles"></i></div>
+                                        <div class="pdf-adv-title">AI Summarize <span class="tool-status-pill coming-soon">AI Beta</span></div>
+                                        <div class="pdf-adv-desc">Instant document summaries</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('PDF to DOCX')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-file-word"></i></div>
-                                        <div class="pdf-adv-title">PDF to DOCX</div>
-                                        <div class="pdf-adv-desc">Convert PDF to DOCX</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;"><i class="fas fa-file-word"></i></div>
+                                        <div class="pdf-adv-title">PDF to DOCX <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Convert PDF to Word</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('OCR Extract')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-crop-alt"></i></div>
-                                        <div class="pdf-adv-title">OCR Extract</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;"><i class="fas fa-crop-alt"></i></div>
+                                        <div class="pdf-adv-title">OCR Extract <span class="tool-status-pill active">Ready</span></div>
                                         <div class="pdf-adv-desc">Extract text from scans</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('Compare PDFs')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-columns"></i></div>
-                                        <div class="pdf-adv-title">Compare PDFs</div>
-                                        <div class="pdf-adv-desc">Compare two files</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(249, 115, 22, 0.12); color: #f97316;"><i class="fas fa-columns"></i></div>
+                                        <div class="pdf-adv-title">Compare PDFs <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Diff two PDF versions</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('Redact PDF')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-user-secret"></i></div>
-                                        <div class="pdf-adv-title">Redact PDF</div>
-                                        <div class="pdf-adv-desc">Remove sensitive info</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;"><i class="fas fa-user-secret"></i></div>
+                                        <div class="pdf-adv-title">Redact PDF <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Sanitize sensitive data</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('eSign PDF')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-signature"></i></div>
-                                        <div class="pdf-adv-title">eSign PDF</div>
-                                        <div class="pdf-adv-desc">Sign documents</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;"><i class="fas fa-signature"></i></div>
+                                        <div class="pdf-adv-title">eSign PDF <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Electronic signatures</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('Version History')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-history"></i></div>
-                                        <div class="pdf-adv-title">Version History</div>
-                                        <div class="pdf-adv-desc">Track file versions</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(6, 182, 212, 0.12); color: #06b6d4;"><i class="fas fa-history"></i></div>
+                                        <div class="pdf-adv-title">Version History <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Track file revisions</div>
                                     </div>
                                     <div class="pdf-adv-tool-item" onclick="openPdfAdvTool('Collaboration')">
-                                        <div class="pdf-adv-icon"><i class="fas fa-users"></i></div>
-                                        <div class="pdf-adv-title">Collaboration</div>
-                                        <div class="pdf-adv-desc">Real-time comments</div>
+                                        <div class="pdf-adv-icon" style="background: rgba(236, 72, 153, 0.12); color: #ec4899;"><i class="fas fa-users"></i></div>
+                                        <div class="pdf-adv-title">Collaboration <span class="tool-status-pill active">Ready</span></div>
+                                        <div class="pdf-adv-desc">Live activity & shares</div>
                                     </div>
                                 </div>
                             </div>
@@ -1137,6 +1159,12 @@
                         <p>Protect, encrypt, organize, and manage PDF documents with native utilities</p>
                     </div>
                     <div class="pdf-tools-grid">
+                        <div class="pdf-tool-box pdf-tool-box-featured" onclick="openPdfToDocxModal()" style="border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(145deg, rgba(37, 99, 235, 0.08), rgba(30, 41, 59, 0.7)); position: relative; overflow: hidden; cursor: pointer;">
+                            <div style="position: absolute; top: 12px; right: 12px; background: #2563eb; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; letter-spacing: 0.5px;">NEW</div>
+                            <i class="fas fa-file-word" style="color: #3b82f6;"></i>
+                            <h4>PDF to DOCX</h4>
+                            <p>Convert PDF documents into editable Word (.docx) files with typography & formatting</p>
+                        </div>
                         <div class="pdf-tool-box" onclick="openProtectModalDirect()">
                             <i class="fas fa-lock-alt"></i>
                             <h4>Protect PDF</h4>
@@ -1147,15 +1175,15 @@
                             <h4>Protected PDFs</h4>
                             <p>Manage and unlock protected files</p>
                         </div>
-                        <div class="pdf-tool-box" onclick="openComingSoonModal('Merge PDFs')">
-                            <i class="fas fa-layer-group"></i>
+                        <div class="pdf-tool-box" onclick="openMergePdfModal()">
+                            <i class="fas fa-layer-group" style="color: #ef4444;"></i>
                             <h4>Merge PDFs</h4>
-                            <p>Combine multiple PDF files into one</p>
+                            <p>Combine multiple PDF files into one unified document</p>
                         </div>
-                        <div class="pdf-tool-box" onclick="openComingSoonModal('PDF Text Extractor')">
-                            <i class="fas fa-file-export"></i>
+                        <div class="pdf-tool-box" onclick="openExtractTextModal()">
+                            <i class="fas fa-file-export" style="color: #10b981;"></i>
                             <h4>Extract Text</h4>
-                            <p>Export textual content & tables</p>
+                            <p>Export structured textual content & tables</p>
                         </div>
                     </div>
                 </section>
@@ -1533,6 +1561,300 @@
                             </div>
 
                         </div>
+                    </div>
+                </section>
+
+                <!-- ======================================================= -->
+                <!-- 🎓 STUDENT HUB & ACADEMIC WORKSPACE MODULE -->
+                <!-- ======================================================= -->
+                <section id="student-hub-section" class="content-section" style="display: none;">
+                    <!-- Top Academic Header -->
+                    <div class="student-page-header">
+                        <div class="student-header-title-group">
+                            <div class="student-main-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="student-header-text">
+                                <h2>Student & Academic Hub</h2>
+                                <p>Manage coursework, assignments, question banks, flashcards & GPA</p>
+                            </div>
+                        </div>
+                        <div class="student-profile-chip" onclick="openProfileSettingsModal()" title="Click to edit profile">
+                            <div class="student-chip-avatar"><i class="fas fa-user-graduate"></i></div>
+                            <div class="student-chip-info">
+                                <span class="student-chip-name" id="studentHeaderName">Nagesh Kotari</span>
+                                <span class="student-chip-prog" id="studentHeaderProgram">BCA • Semester IV</span>
+                            </div>
+                            <i class="fas fa-chevron-right chip-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Top 4 Academic Metric Cards -->
+                    <div class="student-metrics-grid">
+                        <div class="student-metric-card" onclick="switchStudentTab('assignments')">
+                            <div class="metric-icon-box bg-blue"><i class="fas fa-tasks"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-val" id="metricPendingAsg">2 Due</div>
+                                <div class="metric-label">Active Assignments</div>
+                            </div>
+                            <span class="metric-badge badge-blue">Track</span>
+                        </div>
+
+                        <div class="student-metric-card" onclick="switchStudentTab('materials')">
+                            <div class="metric-icon-box bg-purple"><i class="fas fa-book-open"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-val" id="metricStudyDocs">6 Banks</div>
+                                <div class="metric-label">Question Banks & Notes</div>
+                            </div>
+                            <span class="metric-badge badge-purple">Vault</span>
+                        </div>
+
+                        <div class="student-metric-card" onclick="switchStudentTab('gpa')">
+                            <div class="metric-icon-box bg-emerald"><i class="fas fa-chart-line"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-val" id="metricCurrentGpa">8.75 SGPA</div>
+                                <div class="metric-label">Academic Standings</div>
+                            </div>
+                            <span class="metric-badge badge-emerald">Target: 9.2</span>
+                        </div>
+
+                        <div class="student-metric-card" onclick="switchStudentTab('flashcards')">
+                            <div class="metric-icon-box bg-amber"><i class="fas fa-layer-group"></i></div>
+                            <div class="metric-content">
+                                <div class="metric-val" id="metricFlashcards">5 Decks</div>
+                                <div class="metric-label">Exam Flashcards</div>
+                            </div>
+                            <span class="metric-badge badge-amber">Revision</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Student Workspace Box -->
+                    <div class="student-workspace-box">
+                        <!-- Navigation Tabs Bar -->
+                        <div class="student-tabs-bar">
+                            <div class="student-nav-tabs">
+                                <button type="button" class="stu-tab-btn active" id="stuTab-assignments" onclick="switchStudentTab('assignments')">
+                                    <i class="fas fa-clipboard-list"></i> Assignments & Projects
+                                </button>
+                                <button type="button" class="stu-tab-btn" id="stuTab-materials" onclick="switchStudentTab('materials')">
+                                    <i class="fas fa-book-bookmark"></i> Question Banks & Notes
+                                </button>
+                                <button type="button" class="stu-tab-btn" id="stuTab-flashcards" onclick="switchStudentTab('flashcards')">
+                                    <i class="fas fa-clone"></i> Flashcards Deck
+                                </button>
+                                <button type="button" class="stu-tab-btn" id="stuTab-gpa" onclick="switchStudentTab('gpa')">
+                                    <i class="fas fa-calculator"></i> GPA Calculator
+                                </button>
+                                <button type="button" class="stu-tab-btn" id="stuTab-ai-tutor" onclick="switchStudentTab('ai-tutor')">
+                                    <i class="fas fa-robot"></i> Academic AI Tutor
+                                </button>
+                            </div>
+
+                            <div class="student-tab-actions">
+                                <button type="button" class="stu-action-btn btn-stu-primary" onclick="openNewAssignmentModal()">
+                                    <i class="fas fa-plus"></i> New Assignment
+                                </button>
+                                <button type="button" class="stu-action-btn btn-stu-secondary" onclick="createDirectAcademicTemplate()">
+                                    <i class="fas fa-file-word"></i> Word Assignment Template
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TAB PANE 1: Assignments & Projects -->
+                        <div id="stuPane-assignments" class="stu-pane active">
+                            <div class="stu-pane-header">
+                                <div class="stu-filter-pills" id="asgFilterPills">
+                                    <button class="filter-pill active" onclick="filterAssignments('all', this)">All (4)</button>
+                                    <button class="filter-pill" onclick="filterAssignments('In Progress', this)">In Progress (2)</button>
+                                    <button class="filter-pill" onclick="filterAssignments('Pending', this)">Pending (1)</button>
+                                    <button class="filter-pill" onclick="filterAssignments('Submitted', this)">Submitted (1)</button>
+                                </div>
+                                <div class="stu-pane-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="asgSearchInput" placeholder="Filter assignments..." oninput="handleAssignmentSearch(this.value)">
+                                </div>
+                            </div>
+
+                            <div class="stu-assignments-grid" id="studentAssignmentsList">
+                                <!-- Dynamic Assignment Cards -->
+                            </div>
+                        </div>
+
+                        <!-- TAB PANE 2: Question Banks & Course Materials -->
+                        <div id="stuPane-materials" class="stu-pane" style="display: none;">
+                            <div class="stu-pane-header">
+                                <div>
+                                    <h3 style="font-size: 15px; font-weight: 700; color: #f8fafc; margin: 0 0 4px;">Course Materials & Question Banks</h3>
+                                    <p style="font-size: 12px; color: #94a3b8; margin: 0;">Access NEP-2020 Question Banks, syllabus textbooks, and lecture documents</p>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="stu-action-btn btn-stu-primary" onclick="openPdfToDocxModal()">
+                                        <i class="fas fa-file-word"></i> Convert Question Bank to DOCX
+                                    </button>
+                                    <button type="button" class="stu-action-btn btn-stu-secondary" onclick="triggerDocxUpload()">
+                                        <i class="fas fa-upload"></i> Upload Notes
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="stu-materials-grid" id="studentMaterialsGrid">
+                                <!-- Dynamic Materials Cards -->
+                            </div>
+                        </div>
+
+                        <!-- TAB PANE 3: Flashcards & Revision Deck -->
+                        <div id="stuPane-flashcards" class="stu-pane" style="display: none;">
+                            <div class="stu-flashcards-wrapper">
+                                <div class="flashcards-topbar">
+                                    <div class="flashcard-deck-info">
+                                        <h3 style="font-size: 15px; font-weight: 700; color: #ffffff; margin: 0 0 2px;">Exam Revision Flashcards</h3>
+                                        <span class="flashcard-deck-topic" id="currentFcTopic">Topic: Algorithms</span>
+                                    </div>
+                                    <div class="flashcards-actions-right">
+                                        <select id="flashcardTopicFilter" class="custom-select stu-select" onchange="filterFlashcardTopic(this.value)">
+                                            <option value="all">All Topics</option>
+                                            <option value="Algorithms">Algorithms (DSC13)</option>
+                                            <option value="R Programming">R Programming (DSC14)</option>
+                                            <option value="DBMS">DBMS (DSC15)</option>
+                                            <option value="Web Dev">Web Development</option>
+                                        </select>
+                                        <button type="button" class="stu-action-btn btn-stu-primary" onclick="openNewFlashcardModal()">
+                                            <i class="fas fa-plus"></i> Add Card
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 3D Interactive Flashcard Element -->
+                                <div class="flashcard-scene" onclick="flipCurrentFlashcard()">
+                                    <div class="flashcard-card" id="activeFlashcard">
+                                        <div class="flashcard-face flashcard-front">
+                                            <span class="flashcard-tag">QUESTION</span>
+                                            <div class="flashcard-question-text" id="fcQuestionText">What is the time complexity of QuickSort in the Average and Worst cases?</div>
+                                            <span class="flashcard-hint"><i class="fas fa-hand-pointer"></i> Click card to reveal answer</span>
+                                        </div>
+                                        <div class="flashcard-face flashcard-back">
+                                            <span class="flashcard-tag tag-answer">ANSWER</span>
+                                            <div class="flashcard-answer-text" id="fcAnswerText">Average Case: O(n log n)<br>Worst Case: O(n²)</div>
+                                            <span class="flashcard-hint"><i class="fas fa-undo"></i> Click card to flip back</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Flashcard Navigation Controls -->
+                                <div class="flashcard-controls">
+                                    <button type="button" class="fc-nav-btn" onclick="prevFlashcard()" id="fcPrevBtn">
+                                        <i class="fas fa-chevron-left"></i> Previous
+                                    </button>
+                                    <div class="fc-counter" id="fcCounter">1 of 5</div>
+                                    <button type="button" class="fc-nav-btn" onclick="nextFlashcard()" id="fcNextBtn">
+                                        Next <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB PANE 4: GPA Calculator -->
+                        <div id="stuPane-gpa" class="stu-pane" style="display: none;">
+                            <div class="gpa-calc-container">
+                                <div class="gpa-calc-left">
+                                    <div class="gpa-calc-header">
+                                        <h4>Semester IV Courses & Grades</h4>
+                                        <button type="button" class="stu-action-btn btn-stu-secondary" onclick="addGpaCourseRow()">
+                                            <i class="fas fa-plus"></i> Add Course
+                                        </button>
+                                    </div>
+                                    <div class="gpa-table-wrap">
+                                        <table class="gpa-calc-table" id="gpaCalcTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Course Code & Name</th>
+                                                    <th style="width: 100px;">Credits</th>
+                                                    <th style="width: 140px;">Grade</th>
+                                                    <th style="width: 50px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="gpaTableBody">
+                                                <!-- Dynamic Course Rows -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="gpa-calc-right">
+                                    <div class="gpa-meter-card">
+                                        <span class="gpa-meter-title">Calculated SGPA</span>
+                                        <div class="gpa-meter-circle">
+                                            <span class="gpa-score-number" id="calculatedGpaScore">8.75</span>
+                                            <span class="gpa-scale-text">out of 10.0</span>
+                                        </div>
+                                        <div class="gpa-standing-text" id="gpaStandingText">Distinction • Top 5%</div>
+
+                                        <div class="gpa-stat-rows">
+                                            <div class="gpa-stat-row">
+                                                <span>Total Credits:</span>
+                                                <strong id="gpaTotalCredits">17</strong>
+                                            </div>
+                                            <div class="gpa-stat-row">
+                                                <span>Total Grade Points:</span>
+                                                <strong id="gpaTotalPoints">148.5</strong>
+                                            </div>
+                                            <div class="gpa-stat-row">
+                                                <span>Target GPA:</span>
+                                                <strong style="color: #3b82f6;">9.20</strong>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn-gpa-save" onclick="recalculateAndSaveGpa()">
+                                            <i class="fas fa-sync-alt"></i> Update Academic Record
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB PANE 5: Academic AI Tutor -->
+                        <div id="stuPane-ai-tutor" class="stu-pane" style="display: none;">
+                            <div class="ai-tutor-container">
+                                <div class="ai-tutor-banner">
+                                    <div class="tutor-icon-box"><i class="fas fa-brain"></i></div>
+                                    <div>
+                                        <h4>Academic AI Study Companion</h4>
+                                        <p>Select any topic or textbook document from your library to generate exam summaries, quiz questions, or assignment solutions.</p>
+                                    </div>
+                                </div>
+
+                                <div class="ai-tutor-prompts-grid">
+                                    <div class="ai-prompt-card" onclick="triggerAiTutorAction('summarize_question_bank')">
+                                        <i class="fas fa-file-lines" style="color: #3b82f6;"></i>
+                                        <h5>Summarize Question Bank</h5>
+                                        <p>Extract high-yield exam questions and key recurring topics from NEP-2020 question banks.</p>
+                                        <span class="prompt-action-link">Run Assist <i class="fas fa-arrow-right"></i></span>
+                                    </div>
+
+                                    <div class="ai-prompt-card" onclick="triggerAiTutorAction('generate_quiz')">
+                                        <i class="fas fa-bullseye" style="color: #10b981;"></i>
+                                        <h5>Generate Practice Quiz</h5>
+                                        <p>Build 10 multiple-choice and short-answer questions with detailed explanations.</p>
+                                        <span class="prompt-action-link">Generate Quiz <i class="fas fa-arrow-right"></i></span>
+                                    </div>
+
+                                    <div class="ai-prompt-card" onclick="triggerAiTutorAction('feynman_explain')">
+                                        <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
+                                        <h5>Feynman Concept Explainer</h5>
+                                        <p>Break down difficult algorithms and statistical concepts into simple intuitive mental models.</p>
+                                        <span class="prompt-action-link">Explain Concept <i class="fas fa-arrow-right"></i></span>
+                                    </div>
+
+                                    <div class="ai-prompt-card" onclick="triggerAiTutorAction('assignment_outline')">
+                                        <i class="fas fa-pencil-ruler" style="color: #8b5cf6;"></i>
+                                        <h5>Assignment Draft Outline</h5>
+                                        <p>Synthesize a formal academic outline with problem breakdown and reference citations.</p>
+                                        <span class="prompt-action-link">Create Outline <i class="fas fa-arrow-right"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
 
@@ -2912,6 +3234,305 @@ result = f"Analyzed {words} words in document. Status: OK"
         </div>
     </div>
 
+    <!-- PDF to DOCX Converter Modal -->
+    <div id="pdf-to-docx-modal" class="modal-overlay" style="display: none;" onclick="handlePdfToDocxOverlayClick(event)">
+        <div class="modal-content pdf-to-docx-modal-content" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="modal-header pdf-to-docx-modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(37, 99, 235, 0.15); color: #3b82f6;">
+                        <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                        <h2>PDF to DOCX Converter</h2>
+                        <p class="modal-subtitle">Convert PDF documents into editable Word files with formatting & typography</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closePdfToDocxModal()" title="Close">&times;</button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body pdf-to-docx-modal-body">
+                <!-- VIEW 1: Input / Config View -->
+                <div id="pdfToDocxConfigView" class="conv-view-step">
+                    <!-- Source Selection Tabs -->
+                    <div class="conv-source-tabs">
+                        <button type="button" class="conv-tab-btn active" id="convTabLibrary" onclick="switchPdfToDocxSourceTab('library')">
+                            <i class="fas fa-folder-open"></i> From Document Library
+                        </button>
+                        <button type="button" class="conv-tab-btn" id="convTabUpload" onclick="switchPdfToDocxSourceTab('upload')">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload New PDF
+                        </button>
+                    </div>
+
+                    <!-- Source Pane 1: Library Selector -->
+                    <div id="convPaneLibrary" class="conv-source-pane active">
+                        <div class="form-group">
+                            <label for="pdfToDocxSelectFile"><i class="fas fa-file-pdf" style="color: #ef4444; margin-right: 6px;"></i> Select PDF to Convert</label>
+                            <div class="conv-select-wrapper">
+                                <select id="pdfToDocxSelectFile" class="custom-select conv-file-select" onchange="onPdfToDocxFileSelected(this.value)">
+                                    <option value="" disabled selected>-- Select a PDF document --</option>
+                                </select>
+                            </div>
+                            <div id="convSelectedFileMeta" class="conv-selected-file-meta" style="display: none;">
+                                <span class="meta-pill"><i class="far fa-file"></i> <span id="convMetaName">doc.pdf</span></span>
+                                <span class="meta-pill"><i class="fas fa-layer-group"></i> <span id="convMetaPages">-- pages</span></span>
+                                <span class="meta-pill"><i class="fas fa-database"></i> <span id="convMetaSize">-- KB</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Source Pane 2: Drag and drop upload -->
+                    <div id="convPaneUpload" class="conv-source-pane" style="display: none;">
+                        <input type="file" id="pdfToDocxFileInput" accept=".pdf" style="display: none;" onchange="handlePdfToDocxFileChosen(event)">
+                        <div class="conv-dropzone" id="convDropzone" onclick="document.getElementById('pdfToDocxFileInput').click()" ondragover="handleConvDragOver(event)" ondragleave="handleConvDragLeave(event)" ondrop="handleConvDrop(event)">
+                            <div class="conv-drop-icon"><i class="fas fa-file-pdf"></i></div>
+                            <h4>Drag & Drop PDF here or <span class="conv-drop-browse">browse files</span></h4>
+                            <p>Supports standard PDF documents up to 50MB</p>
+                            <div id="convUploadedFileBadge" class="conv-uploaded-badge" style="display: none;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span id="convUploadedFileName">selected.pdf</span>
+                                <span class="conv-badge-size" id="convUploadedFileSize">(1.2 MB)</span>
+                                <button type="button" class="conv-remove-file-btn" onclick="event.stopPropagation(); removePdfToDocxUploadedFile()">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Settings Group -->
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label for="pdfToDocxOutputName"><i class="fas fa-pen" style="margin-right: 6px; color: #94a3b8;"></i> Converted Document Name (.docx)</label>
+                        <div class="conv-input-with-ext">
+                            <input type="text" id="pdfToDocxOutputName" placeholder="Document-Name" class="custom-input">
+                            <span class="conv-ext-addon">.docx</span>
+                        </div>
+                    </div>
+
+                    <!-- Conversion Quality / Formatting Mode -->
+                    <div class="form-group" style="margin-top: 14px;">
+                        <label><i class="fas fa-sliders-h" style="margin-right: 6px; color: #94a3b8;"></i> Conversion Mode</label>
+                        <div class="conv-mode-grid">
+                            <label class="conv-mode-card active" onclick="selectConvMode('standard')">
+                                <input type="radio" name="convMode" value="standard" checked style="display: none;">
+                                <div class="mode-header">
+                                    <span class="mode-title"><i class="fas fa-magic" style="color: #3b82f6;"></i> Standard Structured</span>
+                                    <span class="mode-badge">Recommended</span>
+                                </div>
+                                <p class="mode-desc">Preserves headings, paragraphs, bullet lists, tables & native page breaks</p>
+                            </label>
+
+                            <label class="conv-mode-card" onclick="selectConvMode('layout')">
+                                <input type="radio" name="convMode" value="layout" style="display: none;">
+                                <div class="mode-header">
+                                    <span class="mode-title"><i class="fas fa-palette" style="color: #8b5cf6;"></i> Layout Optimized</span>
+                                </div>
+                                <p class="mode-desc">Enhanced typography, styled headings, headers, footers & modern margins</p>
+                            </label>
+
+                            <label class="conv-mode-card" onclick="selectConvMode('text_only')">
+                                <input type="radio" name="convMode" value="text_only" style="display: none;">
+                                <div class="mode-header">
+                                    <span class="mode-title"><i class="fas fa-align-left" style="color: #10b981;"></i> Clean Text Flow</span>
+                                </div>
+                                <p class="mode-desc">Extracts pure text & paragraphs into clean flowing editable Word content</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: Processing Progress Animation View -->
+                <div id="pdfToDocxProgressView" class="conv-view-step" style="display: none;">
+                    <div class="conv-progress-container">
+                        <div class="conv-progress-spinner-wrap">
+                            <div class="conv-pulse-ring"></div>
+                            <div class="conv-center-icon"><i class="fas fa-sync fa-spin"></i></div>
+                        </div>
+                        <h3 id="convProgressTitle" class="conv-progress-title">Converting PDF to DOCX...</h3>
+                        <p id="convProgressSubtitle" class="conv-progress-subtitle">Extracting layout, typography, tables, and document structure</p>
+                        
+                        <div class="conv-progress-bar-wrap">
+                            <div id="convProgressBarFill" class="conv-progress-bar-fill" style="width: 15%;"></div>
+                        </div>
+
+                        <div class="conv-steps-list">
+                            <div class="conv-step-item active" id="convStep1">
+                                <i class="fas fa-check-circle step-icon"></i>
+                                <span>Analyzing PDF stream & text layers</span>
+                            </div>
+                            <div class="conv-step-item" id="convStep2">
+                                <i class="fas fa-circle step-icon"></i>
+                                <span>Detecting headings, lists, tables & styles</span>
+                            </div>
+                            <div class="conv-step-item" id="convStep3">
+                                <i class="fas fa-circle step-icon"></i>
+                                <span>Compiling OpenXML DOCX package</span>
+                            </div>
+                            <div class="conv-step-item" id="convStep4">
+                                <i class="fas fa-circle step-icon"></i>
+                                <span>Finalizing document & generating preview</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: Success Result View -->
+                <div id="pdfToDocxSuccessView" class="conv-view-step" style="display: none;">
+                    <div class="conv-success-container">
+                        <div class="conv-success-icon-wrap">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <h3 class="conv-success-title">Conversion Complete!</h3>
+                        <p class="conv-success-subtitle">Your PDF has been successfully converted into an editable Microsoft Word document.</p>
+
+                        <div class="conv-result-card">
+                            <div class="result-card-icon"><i class="fas fa-file-word" style="color: #2563eb;"></i></div>
+                            <div class="result-card-info">
+                                <h4 id="convResultDocxName">Document.docx</h4>
+                                <div class="result-card-meta">
+                                    <span id="convResultPages"><i class="fas fa-layer-group"></i> 1 Page</span>
+                                    <span id="convResultSize"><i class="fas fa-database"></i> 14 KB</span>
+                                    <span id="convResultParagraphs"><i class="fas fa-paragraph"></i> 24 Paragraphs</span>
+                                    <span class="badge-converted">DOCX Ready</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="conv-success-actions-grid">
+                            <button type="button" class="btn-conv-main btn-conv-editor" onclick="openConvertedDocxInEditor()">
+                                <i class="fas fa-file-word"></i> Open in DOCX Editor
+                            </button>
+                            <button type="button" class="btn-conv-main btn-conv-download" onclick="downloadConvertedDocxFile()">
+                                <i class="fas fa-download"></i> Download DOCX
+                            </button>
+                            <button type="button" class="btn-conv-secondary" onclick="viewConvertedInWorkspace()">
+                                <i class="fas fa-folder"></i> View in DOCX Workspace
+                            </button>
+                            <button type="button" class="btn-conv-secondary" onclick="resetPdfToDocxModal()">
+                                <i class="fas fa-redo"></i> Convert Another PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer pdf-to-docx-modal-footer" id="pdfToDocxModalFooter">
+                <button type="button" class="action-btn btn-secondary" onclick="closePdfToDocxModal()">Cancel</button>
+                <button type="button" class="action-btn btn-primary" id="btnStartPdfToDocx" onclick="submitPdfToDocxConversion()">
+                    <i class="fas fa-file-word" style="margin-right: 6px;"></i> Convert to DOCX
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Assignment Modal -->
+    <div id="new-assignment-modal" class="modal-overlay" style="display: none;" onclick="if(event.target.id==='new-assignment-modal') closeNewAssignmentModal()">
+        <div class="modal-content" style="max-width: 500px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); color: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 16px; margin: 0; color: #fff;">New Assignment / Project</h2>
+                        <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0;">Create and track academic deliverables</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeNewAssignmentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newAssignmentForm" onsubmit="submitNewAssignment(event)">
+                    <div class="form-group">
+                        <label for="asgTitleInput"><i class="fas fa-heading" style="color: #818cf8;"></i> Assignment Title</label>
+                        <input type="text" id="asgTitleInput" class="custom-input" placeholder="e.g. Dynamic Programming Case Study" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="asgCourseSelect"><i class="fas fa-book" style="color: #818cf8;"></i> Course / Subject</label>
+                        <select id="asgCourseSelect" class="custom-select" required>
+                            <option value="DSC13 - Design & Analysis of Algorithms">DSC13 - Design & Analysis of Algorithms</option>
+                            <option value="DSC14 - Statistical Computing and R">DSC14 - Statistical Computing and R</option>
+                            <option value="DSC15 - Database Management Systems">DSC15 - Database Management Systems</option>
+                            <option value="SEC02 - Full Stack Web Development">SEC02 - Full Stack Web Development</option>
+                            <option value="AEC04 - Technical Communication">AEC04 - Technical Communication</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 12px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="asgDueDateInput"><i class="fas fa-calendar" style="color: #818cf8;"></i> Due Date</label>
+                            <input type="date" id="asgDueDateInput" class="custom-input" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="asgPrioritySelect"><i class="fas fa-flag" style="color: #818cf8;"></i> Priority</label>
+                            <select id="asgPrioritySelect" class="custom-select">
+                                <option value="High">High Priority</option>
+                                <option value="Medium" selected>Medium Priority</option>
+                                <option value="Low">Low Priority</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="asgCreateDocCheckbox" checked>
+                            <span class="checkbox-checkmark"></span>
+                            Automatically generate editable Word (.docx) draft for this assignment
+                        </label>
+                    </div>
+                    <div class="modal-footer" style="padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 16px;">
+                        <button type="button" class="action-btn btn-secondary" onclick="closeNewAssignmentModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary" style="background: #6366f1;">
+                            <i class="fas fa-check"></i> Add Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Flashcard Modal -->
+    <div id="new-flashcard-modal" class="modal-overlay" style="display: none;" onclick="if(event.target.id==='new-flashcard-modal') closeNewFlashcardModal()">
+        <div class="modal-content" style="max-width: 480px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 16px; margin: 0; color: #fff;">New Exam Flashcard</h2>
+                        <p style="font-size: 12px; color: #94a3b8; margin: 2px 0 0;">Add key concepts & formula questions</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeNewFlashcardModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newFlashcardForm" onsubmit="submitNewFlashcard(event)">
+                    <div class="form-group">
+                        <label for="fcTopicSelect">Topic / Subject</label>
+                        <select id="fcTopicSelect" class="custom-select" required>
+                            <option value="Algorithms">Algorithms (DSC13)</option>
+                            <option value="R Programming">R Programming (DSC14)</option>
+                            <option value="DBMS">Database Management (DSC15)</option>
+                            <option value="Web Dev">Full Stack Web Dev</option>
+                            <option value="General">General Academic</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="fcQuestionInput">Front (Question / Concept / Term)</label>
+                        <textarea id="fcQuestionInput" class="custom-input" rows="3" placeholder="e.g. What is the Master Theorem for divide-and-conquer recurrences?" required style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fcAnswerInput">Back (Answer / Definition / Formula)</label>
+                        <textarea id="fcAnswerInput" class="custom-input" rows="3" placeholder="e.g. T(n) = aT(n/b) + f(n) provides asymptotic bounds..." required style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="modal-footer" style="padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 16px;">
+                        <button type="button" class="action-btn btn-secondary" onclick="closeNewFlashcardModal()">Cancel</button>
+                        <button type="submit" class="action-btn btn-primary" style="background: #f59e0b;">
+                            <i class="fas fa-plus"></i> Save Flashcard
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Preview Modal with Find in Document -->
     <div id="preview-modal" class="modal-overlay" style="display: none;" onclick="handlePreviewOverlayClick(event)">
         <div class="modal-content preview-modal-content" onclick="event.stopPropagation()">
@@ -2932,6 +3553,9 @@ result = f"Analyzed {words} words in document. Status: OK"
                 </div>
 
                 <div class="preview-header-actions">
+                    <button type="button" class="preview-hdr-btn" id="previewConvertDocxBtn" title="Convert PDF to DOCX" onclick="convertCurrentPreviewToDocx()" style="display: none; background: rgba(37, 99, 235, 0.18); border-color: rgba(37, 99, 235, 0.4); color: #93c5fd;">
+                        <i class="fas fa-file-word"></i> <span>Convert to DOCX</span>
+                    </button>
                     <button type="button" class="preview-hdr-btn" id="previewDownloadBtn" title="Download Document" onclick="downloadPreviewDocument()">
                         <i class="fas fa-download"></i> <span>Download</span>
                     </button>
@@ -3011,6 +3635,697 @@ result = f"Analyzed {words} words in document. Status: OK"
                         <i class="fas fa-external-link-alt"></i> Open Full View
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================== -->
+    <!-- 8 ADVANCED PDF & DOCUMENT SUITE MODALS                                     -->
+    <!-- ========================================================================== -->
+
+    <!-- 1. MERGE PDFs MODAL -->
+    <div id="modal-merge-pdfs" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeMergePdfModal()">
+        <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h2>Merge PDF Documents</h2>
+                        <p class="modal-subtitle">Combine multiple PDF files into a single consolidated document</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeMergePdfModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">
+                        <i class="fas fa-plus-circle" style="color: #ef4444; margin-right: 4px;"></i> Add PDF to Merge List
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="mergePdfSelectPicker" class="custom-select" style="flex: 1;">
+                            <option value="" disabled selected>-- Select a document to add --</option>
+                        </select>
+                        <button type="button" class="action-btn btn-primary" onclick="addFileToMergeList()" style="white-space: nowrap;">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-size: 12px; font-weight: 600; color: #cbd5e1;">Documents Order (<span id="mergeFileCount">0</span> selected)</label>
+                        <span style="font-size: 11px; color: #94a3b8;">Use arrows to reorder pages</span>
+                    </div>
+                    <div id="mergeFilesListContainer" style="background: #12141a; border: 1px solid #232733; border-radius: 8px; min-height: 140px; max-height: 220px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px;">
+                        <div style="color: #64748b; font-size: 12px; text-align: center; padding: 40px 0;">No PDF files added yet. Select documents above.</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="mergeOutputFilename" style="font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Output Filename (.pdf)</label>
+                    <div class="conv-input-with-ext">
+                        <input type="text" id="mergeOutputFilename" placeholder="Consolidated_Report" class="custom-input">
+                        <span class="conv-ext-addon">.pdf</span>
+                    </div>
+                </div>
+
+                <div id="mergeProgressArea" style="display: none; margin-top: 14px; background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                        <span style="color: #cbd5e1;" id="mergeProgressText"><i class="fas fa-spinner fa-spin" style="color: #ef4444;"></i> Merging PDF pages...</span>
+                        <span style="color: #ef4444; font-weight: 700;" id="mergeProgressPct">45%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: #1e222d; border-radius: 3px; overflow: hidden;">
+                        <div id="mergeProgressBar" style="width: 45%; height: 100%; background: #ef4444; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <div id="mergeSuccessResult" style="display: none; margin-top: 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 14px;">
+                    <div style="display: flex; align-items: center; gap: 10px; color: #34d399; font-weight: 600; font-size: 13px; margin-bottom: 8px;">
+                        <i class="fas fa-check-circle" style="font-size: 18px;"></i>
+                        <span id="mergeSuccessMsg">Merged successfully!</span>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="action-btn btn-primary" id="mergeOpenResultBtn" style="background: #10b981; border-color: #10b981;"><i class="fas fa-external-link-alt"></i> Open in Workspace</button>
+                        <button type="button" class="action-btn btn-secondary" id="mergeDownloadResultBtn"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="mergeModalFooter">
+                <button type="button" class="action-btn btn-secondary" onclick="closeMergePdfModal()">Cancel</button>
+                <button type="button" class="action-btn btn-primary" id="btnExecuteMerge" onclick="executeMergePdfs()"><i class="fas fa-object-group"></i> Merge PDFs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. EXTRACT TEXT MODAL -->
+    <div id="modal-extract-text" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeExtractTextModal()">
+        <div class="modal-content" style="max-width: 680px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                    <div>
+                        <h2>Extract Text & Data</h2>
+                        <p class="modal-subtitle">Extract structured plain-text and data streams from PDF documents</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeExtractTextModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Select Document</label>
+                    <select id="extractTextDocSelect" class="custom-select" onchange="loadExtractTextDocMeta(this.value)">
+                        <option value="" disabled selected>-- Select a PDF document --</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 12px; font-weight: 600; color: #cbd5e1;">Extracted Content</span>
+                    <div style="display: flex; gap: 8px;">
+                        <span id="extractTextMetaPill" class="badge" style="background: #1e222d; color: #94a3b8; font-size: 11px;">0 words • 0 chars</span>
+                        <button type="button" class="action-btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="copyExtractedTextToClipboard()"><i class="far fa-copy"></i> Copy</button>
+                        <button type="button" class="action-btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="downloadExtractedTextAsTxt()"><i class="fas fa-download"></i> Save as .txt</button>
+                    </div>
+                </div>
+
+                <div style="position: relative;">
+                    <textarea id="extractedTextContentBox" readonly style="width: 100%; height: 260px; background: #101217; border: 1px solid #232733; border-radius: 8px; color: #e2e8f0; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; padding: 12px; resize: vertical;" placeholder="Extracted document text will appear here..."></textarea>
+                    <div id="extractedTextLoadingOverlay" style="display: none; position: absolute; inset: 0; background: rgba(16, 18, 23, 0.85); border-radius: 8px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #38bdf8;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                        <span style="font-size: 12.5px; font-weight: 600;">Extracting document text stream...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeExtractTextModal()">Close</button>
+                <button type="button" class="action-btn btn-primary" onclick="executeExtractText()" style="background: #10b981; border-color: #10b981;"><i class="fas fa-bolt"></i> Extract Text</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. OCR EXTRACT MODAL -->
+    <div id="modal-ocr-extract" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeOcrModal()">
+        <div class="modal-content" style="max-width: 680px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                        <i class="fas fa-crop-alt"></i>
+                    </div>
+                    <div>
+                        <h2>Neural OCR Text Extraction</h2>
+                        <p class="modal-subtitle">Optical character recognition for scanned PDFs, images, and raster layers</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeOcrModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Select Scanned PDF</label>
+                        <select id="ocrDocSelect" class="custom-select">
+                            <option value="" disabled selected>-- Select a document for OCR --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Recognition Engine</label>
+                        <select id="ocrEngineSelect" class="custom-select">
+                            <option value="tesseract">Tesseract v5.0 Neural</option>
+                            <option value="fast">Fast Layout OCR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="ocrStatusCard" style="display: none; background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i class="fas fa-check-circle"></i> OCR Verified</span>
+                            <span style="font-size: 12px; color: #94a3b8;">Confidence Score: <strong id="ocrConfidenceVal" style="color: #34d399;">98.6%</strong></span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="action-btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="copyOcrText()"><i class="far fa-copy"></i> Copy</button>
+                            <button type="button" class="action-btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="exportOcrToDocx()"><i class="fas fa-file-word" style="color: #3b82f6;"></i> To Word</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="position: relative;">
+                    <textarea id="ocrOutputText" readonly style="width: 100%; height: 240px; background: #101217; border: 1px solid #232733; border-radius: 8px; color: #e2e8f0; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; padding: 12px; resize: vertical;" placeholder="OCR recognition text will stream here..."></textarea>
+                    <div id="ocrLoadingSpinner" style="display: none; position: absolute; inset: 0; background: rgba(16, 18, 23, 0.85); border-radius: 8px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #10b981;">
+                        <i class="fas fa-scanner fa-spin" style="font-size: 26px;"></i>
+                        <span style="font-size: 12.5px; font-weight: 600;">Scanning raster layers & running optical character recognition...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeOcrModal()">Close</button>
+                <button type="button" class="action-btn btn-primary" onclick="executeOcrScan()" style="background: #10b981; border-color: #10b981;"><i class="fas fa-play"></i> Run OCR Scan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. COMPARE PDFs MODAL -->
+    <div id="modal-compare-pdfs" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeCompareModal()">
+        <div class="modal-content" style="max-width: 780px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                        <i class="fas fa-columns"></i>
+                    </div>
+                    <div>
+                        <h2>PDF Comparison & Difference Diff</h2>
+                        <p class="modal-subtitle">Analyze structural, textual, and layout revisions between two PDF versions</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeCompareModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div style="background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Document A (Original / Baseline)</label>
+                        <select id="compareDocASelect" class="custom-select" style="width: 100%;">
+                            <option value="" disabled selected>-- Select Document A --</option>
+                        </select>
+                    </div>
+                    <div style="background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 700; color: #f97316; margin-bottom: 6px;">Document B (Revised / Comparison)</label>
+                        <select id="compareDocBSelect" class="custom-select" style="width: 100%;">
+                            <option value="" disabled selected>-- Select Document B --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Comparison Metrics Box -->
+                <div id="compareMetricsCard" style="display: none; background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Match Score</div>
+                            <div id="compareMatchScore" style="font-size: 20px; font-weight: 800; color: #10b981;">94%</div>
+                        </div>
+                        <div style="border-left: 1px solid #232733; height: 36px;"></div>
+                        <div>
+                            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Total Differences</div>
+                            <div id="compareTotalDiffs" style="font-size: 20px; font-weight: 800; color: #f97316;">3 modifications</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Differences Table -->
+                <div style="border: 1px solid #232733; border-radius: 8px; overflow: hidden;">
+                    <div style="background: #161922; padding: 10px 14px; font-size: 12px; font-weight: 700; color: #cbd5e1; border-bottom: 1px solid #232733;">
+                        Line-by-Line Revision Diff
+                    </div>
+                    <div id="compareDiffsContainer" style="max-height: 240px; overflow-y: auto; background: #0f1117; font-family: monospace; font-size: 11.5px;">
+                        <div style="color: #64748b; text-align: center; padding: 30px;">Select two documents and click 'Compare Documents' to view the detailed difference analysis.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeCompareModal()">Close</button>
+                <button type="button" class="action-btn btn-primary" onclick="executeComparePdfs()" style="background: #f97316; border-color: #f97316;"><i class="fas fa-arrows-split-up-and-left"></i> Compare Documents</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. REDACT PDF MODAL -->
+    <div id="modal-redact-pdf" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeRedactModal()">
+        <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                        <i class="fas fa-user-secret"></i>
+                    </div>
+                    <div>
+                        <h2>Permanent PDF Redaction & Sanitization</h2>
+                        <p class="modal-subtitle">Permanently black-out sensitive PII, numbers, and private data</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeRedactModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Target PDF Document</label>
+                    <select id="redactDocSelect" class="custom-select">
+                        <option value="" disabled selected>-- Select a document to redact --</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Target Page</label>
+                        <select id="redactPageSelect" class="custom-select">
+                            <option value="0">Page 1</option>
+                            <option value="1">Page 2</option>
+                            <option value="2">Page 3</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Redaction Preset</label>
+                        <select id="redactPresetSelect" class="custom-select">
+                            <option value="header">Top Header Banner</option>
+                            <option value="footer">Bottom Footer Block</option>
+                            <option value="center">Center Paragraph</option>
+                            <option value="pii">PII / SSN / Phone Block</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label for="redactOutputName" style="font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Sanitized Output Filename</label>
+                    <div class="conv-input-with-ext">
+                        <input type="text" id="redactOutputName" placeholder="Document_Sanitized" class="custom-input">
+                        <span class="conv-ext-addon">.pdf</span>
+                    </div>
+                </div>
+
+                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; font-size: 11.5px; color: #fca5a5;">
+                    <i class="fas fa-shield-alt" style="margin-right: 6px;"></i> Redactions are cryptographically permanent and baked into the PDF raster. Original text cannot be copied or recovered.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeRedactModal()">Cancel</button>
+                <button type="button" class="action-btn btn-primary" onclick="executeRedactPdf()" style="background: #ef4444; border-color: #ef4444;"><i class="fas fa-marker"></i> Apply Redaction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. eSIGN PDF MODAL -->
+    <div id="modal-esign-pdf" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeEsignModal()">
+        <div class="modal-content" style="max-width: 640px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                        <i class="fas fa-signature"></i>
+                    </div>
+                    <div>
+                        <h2>eSign & Digital Signature</h2>
+                        <p class="modal-subtitle">Draw or generate electronic signatures and stamp verified approval</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeEsignModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Select Document to Sign</label>
+                        <select id="esignDocSelect" class="custom-select">
+                            <option value="" disabled selected>-- Select a document --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Signer Name</label>
+                        <input type="text" id="esignSignerNameInput" class="custom-input" value="Nagesh Kotari" placeholder="Signer Full Name">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-size: 12px; font-weight: 600; color: #cbd5e1;">Draw Electronic Signature</label>
+                        <button type="button" class="action-btn btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="clearEsignPad()"><i class="fas fa-eraser"></i> Clear Pad</button>
+                    </div>
+                    <canvas id="esignPadCanvas" style="width: 100%; height: 160px; background: #ffffff; border-radius: 8px; cursor: crosshair; display: block;"></canvas>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Target Page</label>
+                        <select id="esignPageSelect" class="custom-select">
+                            <option value="0">Page 1 (Cover / First)</option>
+                            <option value="last">Last Page (Signature Block)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Placement Position</label>
+                        <select id="esignPositionSelect" class="custom-select">
+                            <option value="bottom-right">Bottom Right</option>
+                            <option value="bottom-left">Bottom Left</option>
+                            <option value="center">Center</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeEsignModal()">Cancel</button>
+                <button type="button" class="action-btn btn-primary" onclick="executeEsignPdf()" style="background: #8b5cf6; border-color: #8b5cf6;"><i class="fas fa-file-signature"></i> Sign Document</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. VERSION HISTORY MODAL -->
+    <div id="modal-version-history" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeVersionsModal()">
+        <div class="modal-content" style="max-width: 680px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div>
+                        <h2>Document Version History & Audit Trail</h2>
+                        <p class="modal-subtitle">Track document revisions, compare changes, and restore baseline snapshots</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeVersionsModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <select id="versionDocSelect" class="custom-select" style="flex: 1;" onchange="loadDocumentVersionHistory(this.value)">
+                        <option value="" disabled selected>-- Select document --</option>
+                    </select>
+                    <button type="button" class="action-btn btn-primary" onclick="openCreateSnapshotDialog()" style="white-space: nowrap;"><i class="fas fa-plus"></i> New Snapshot</button>
+                </div>
+
+                <div id="versionTimelineContainer" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="color: #64748b; text-align: center; padding: 40px 0;">Loading version history...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeVersionsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. COLLABORATION MODAL -->
+    <div id="modal-collaboration" class="modal-overlay" style="display: none;" onclick="if(event.target===this) closeCollaborationModal()">
+        <div class="modal-content" style="max-width: 680px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="pdf-modal-title-wrap">
+                    <div class="pdf-modal-header-icon" style="background: rgba(236, 72, 153, 0.15); color: #ec4899;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h2>Document Collaboration & Team Activity</h2>
+                        <p class="modal-subtitle">Manage shared permissions, reviewer notes, and real-time audit logs</p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeCollaborationModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Select Document</label>
+                    <select id="collabDocSelect" class="custom-select" onchange="loadCollabData(this.value)">
+                        <option value="" disabled selected>-- Select document --</option>
+                    </select>
+                </div>
+
+                <!-- Collaborators Section -->
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Team Members with Access</label>
+                    <div id="collabUsersList" style="background: #12141a; border: 1px solid #232733; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 28px; height: 28px; border-radius: 50%; background: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 11px;">NK</div>
+                                <div>
+                                    <div style="font-size: 12px; font-weight: 600; color: #fff;">Nagesh Kotari (You)</div>
+                                    <div style="font-size: 10.5px; color: #94a3b8;">nagesh@neurocore.io</div>
+                                </div>
+                            </div>
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">Owner</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Activity Feed -->
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Document Activity Feed</label>
+                    <div id="collabActivityList" style="background: #12141a; border: 1px solid #232733; border-radius: 8px; max-height: 180px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="color: #64748b; font-size: 12px; text-align: center; padding: 20px;">No recent activity.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="action-btn btn-secondary" onclick="closeCollaborationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MongoDB Compass & Database Studio Modal -->
+    <div id="ncMongoCompassModal" class="modal-backdrop" style="display: none; z-index: 9999;">
+        <div class="modal-dialog" style="max-width: 960px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f1117; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+            
+            <!-- Modal Header -->
+            <div class="modal-header" style="border-bottom: 1px solid #27272a; padding: 16px 22px; background: #141720; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-leaf" style="color: #10b981; font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #f4f4f5; letter-spacing: -0.2px;">MongoDB Compass & Database Studio</h3>
+                            <span id="mongoModalStatusBadge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 9999px;">● CONNECTED (27017)</span>
+                        </div>
+                        <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">
+                            Database: <strong style="color: #f4f4f5;">neurocore_office</strong> • Connection String: <code style="color: #34d399; background: #18181b; padding: 2px 6px; border-radius: 4px; font-family: monospace;">mongodb://127.0.0.1:27017/</code>
+                        </p>
+                    </div>
+                </div>
+                <button class="modal-close-btn" onclick="closeMongoCompassModal()" style="font-size: 22px; color: #a1a1aa; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- Modal Tab Navigation -->
+            <div style="display: flex; border-bottom: 1px solid #27272a; background: #11131a; padding: 0 16px;">
+                <button class="mongo-tab-btn active" id="mongoTabBtn-connect" onclick="switchMongoTab('connect')">
+                    <i class="fas fa-plug" style="margin-right: 6px;"></i> Compass Connection
+                </button>
+                <button class="mongo-tab-btn" id="mongoTabBtn-explorer" onclick="switchMongoTab('explorer')">
+                    <i class="fas fa-layer-group" style="margin-right: 6px;"></i> Data Explorer
+                </button>
+                <button class="mongo-tab-btn" id="mongoTabBtn-queries" onclick="switchMongoTab('queries')">
+                    <i class="fas fa-terminal" style="margin-right: 6px;"></i> Compass Queries & Pipelines
+                </button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="modal-body" style="padding: 22px; overflow-y: auto; flex: 1; background: #0c0d12;">
+                
+                <!-- TAB 1: Compass Connection & Status -->
+                <div id="mongoTab-connect" class="mongo-tab-pane">
+                    
+                    <!-- Connection URI Card -->
+                    <div style="background: #141720; border: 1px solid #27272a; border-radius: 10px; padding: 18px; margin-bottom: 18px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">MongoDB Compass Connection URI</span>
+                            <span style="font-size: 11px; color: #10b981; font-weight: 600;"><i class="fas fa-check-circle"></i> Wire Protocol Ready</span>
+                        </div>
+                        <div class="mongo-uri-box">
+                            <span class="mongo-uri-code" id="mongoCompassUriDisplay">mongodb://127.0.0.1:27017/</span>
+                            <button class="mongo-btn-copy" onclick="copyMongoCompassUri()">
+                                <i class="far fa-copy"></i> Copy for Compass
+                            </button>
+                        </div>
+                        <div style="margin-top: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <button class="mongo-btn-primary" onclick="triggerMongoSync()" id="btnMongoSyncNow">
+                                <i class="fas fa-sync-alt" id="iconMongoSync"></i> Sync All Data to MongoDB
+                            </button>
+                            <button class="mongo-btn-copy" onclick="downloadCompassDump()">
+                                <i class="fas fa-file-download"></i> Download Compass JSON Dump
+                            </button>
+                            <button class="mongo-btn-copy" onclick="toggleCustomUriSection()">
+                                <i class="fas fa-cog"></i> Custom Connection URI
+                            </button>
+                        </div>
+
+                        <!-- Custom URI Expandable Box -->
+                        <div id="mongoCustomUriBox" style="display: none; margin-top: 16px; padding-top: 14px; border-top: 1px solid #27272a;">
+                            <label style="display: block; font-size: 11.5px; color: #cbd5e1; margin-bottom: 6px;">Connect to Remote MongoDB / Atlas:</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="inputCustomMongoUri" placeholder="e.g. mongodb+srv://username:password@cluster.mongodb.net/neurocore_office" style="flex: 1; background: #09090b; border: 1px solid #27272a; border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 12px;">
+                                <button class="mongo-btn-primary" onclick="connectCustomMongoUri()">Connect</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                        <div class="mongo-stat-card">
+                            <span class="mongo-stat-title">Collections</span>
+                            <span class="mongo-stat-value" id="statMongoCols" style="color: #34d399;">7</span>
+                            <span class="mongo-stat-sub">documents, tags, annotations, etc.</span>
+                        </div>
+                        <div class="mongo-stat-card">
+                            <span class="mongo-stat-title">Total Records</span>
+                            <span class="mongo-stat-value" id="statMongoDocs">--</span>
+                            <span class="mongo-stat-sub">Across all database collections</span>
+                        </div>
+                        <div class="mongo-stat-card">
+                            <span class="mongo-stat-title">Active Indexes</span>
+                            <span class="mongo-stat-value" id="statMongoIndexes" style="color: #60a5fa;">20</span>
+                            <span class="mongo-stat-sub">B-Tree search indexes</span>
+                        </div>
+                        <div class="mongo-stat-card">
+                            <span class="mongo-stat-title">Operations Log</span>
+                            <span class="mongo-stat-value" id="statMongoOps" style="color: #f59e0b;">--</span>
+                            <span class="mongo-stat-sub">Audited database events</span>
+                        </div>
+                    </div>
+
+                    <!-- Compass Connection Instructions Guide -->
+                    <div style="background: #141720; border: 1px solid #27272a; border-radius: 10px; padding: 18px;">
+                        <h4 style="margin: 0 0 12px; font-size: 13.5px; font-weight: 700; color: #f4f4f5; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-compass" style="color: #10b981;"></i> How to Connect with MongoDB Compass
+                        </h4>
+                        <ol style="margin: 0; padding-left: 20px; font-size: 12.5px; color: #cbd5e1; line-height: 1.8;">
+                            <li>Open the <strong>MongoDB Compass</strong> desktop app on your workstation.</li>
+                            <li>In the New Connection screen, paste: <code style="color: #34d399; background: #09090b; padding: 2px 6px; border-radius: 4px;">mongodb://127.0.0.1:27017/</code> and click <strong>Connect</strong>.</li>
+                            <li>In the left sidebar, click on database <strong style="color: #f4f4f5;">neurocore_office</strong>.</li>
+                            <li>You will see all active collections: <code style="color: #93c5fd;">documents</code>, <code style="color: #93c5fd;">tags</code>, <code style="color: #93c5fd;">pdf_annotations</code>, <code style="color: #93c5fd;">versions</code>, <code style="color: #93c5fd;">collaboration</code>, <code style="color: #93c5fd;">audit_logs</code>, and <code style="color: #93c5fd;">student_hub</code>.</li>
+                            <li>Click any collection to inspect documents, run filter queries, and build aggregation pipelines!</li>
+                        </ol>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: Collection Explorer -->
+                <div id="mongoTab-explorer" class="mongo-tab-pane" style="display: none;">
+                    
+                    <!-- Collection Selector Bar -->
+                    <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid #27272a;">
+                        <button class="mongo-btn-copy active" id="btnCol-documents" onclick="selectMongoCollection('documents')">documents (<span id="cntCol-documents">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-tags" onclick="selectMongoCollection('tags')">tags (<span id="cntCol-tags">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-pdf_annotations" onclick="selectMongoCollection('pdf_annotations')">pdf_annotations (<span id="cntCol-pdf_annotations">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-versions" onclick="selectMongoCollection('versions')">versions (<span id="cntCol-versions">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-collaboration" onclick="selectMongoCollection('collaboration')">collaboration (<span id="cntCol-collaboration">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-audit_logs" onclick="selectMongoCollection('audit_logs')">audit_logs (<span id="cntCol-audit_logs">0</span>)</button>
+                        <button class="mongo-btn-copy" id="btnCol-student_hub" onclick="selectMongoCollection('student_hub')">student_hub (<span id="cntCol-student_hub">0</span>)</button>
+                    </div>
+
+                    <!-- Filter Query Bar -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                        <input type="text" id="inputMongoQueryFilter" placeholder='MongoDB query filter e.g. {"type": "pdf"} or keyword search' style="flex: 1; background: #141720; border: 1px solid #27272a; border-radius: 6px; padding: 8px 12px; color: #fff; font-size: 12px; font-family: monospace;">
+                        <button class="mongo-btn-primary" onclick="runMongoQuery()"><i class="fas fa-search"></i> Run Query</button>
+                        <button class="mongo-btn-copy" onclick="resetMongoQuery()"><i class="fas fa-undo"></i> Reset</button>
+                        <button class="mongo-btn-copy" onclick="openInsertMongoDocModal()"><i class="fas fa-plus"></i> Insert Doc</button>
+                    </div>
+
+                    <!-- Query Result Info -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 11.5px; color: #94a3b8;">
+                        <span>Showing collection: <strong id="currentColNameLabel" style="color: #34d399;">documents</strong> (<span id="queryResultCount">0</span> documents found)</span>
+                        <button class="mongo-btn-copy" style="padding: 3px 8px; font-size: 11px;" onclick="downloadCurrentCollectionJson()"><i class="fas fa-download"></i> Export Collection JSON</button>
+                    </div>
+
+                    <!-- Documents Container -->
+                    <div id="mongoDocsContainer" style="max-height: 400px; overflow-y: auto;">
+                        <div style="text-align: center; color: #64748b; padding: 40px;">Loading collection records...</div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 3: Compass Queries & Pipelines -->
+                <div id="mongoTab-queries" class="mongo-tab-pane" style="display: none;">
+                    
+                    <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 700; color: #f4f4f5;">Ready-to-Paste MongoDB Compass Filters</h4>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 0; margin-bottom: 16px;">In MongoDB Compass, paste these into the <strong>Filter</strong> bar to query documents instantly:</p>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #f4f4f5;">Filter: All PDF Documents</div>
+                                <code style="font-size: 11.5px; color: #34d399; font-family: monospace;">{ "type": "pdf" }</code>
+                            </div>
+                            <button class="mongo-btn-copy" onclick="copySnippet('{ &quot;type&quot;: &quot;pdf&quot; }')"><i class="far fa-copy"></i> Copy</button>
+                        </div>
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #f4f4f5;">Filter: Starred & Important Files</div>
+                                <code style="font-size: 11.5px; color: #34d399; font-family: monospace;">{ "starred": true }</code>
+                            </div>
+                            <button class="mongo-btn-copy" onclick="copySnippet('{ &quot;starred&quot;: true }')"><i class="far fa-copy"></i> Copy</button>
+                        </div>
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #f4f4f5;">Filter: Documents with Specific Tag</div>
+                                <code style="font-size: 11.5px; color: #34d399; font-family: monospace;">{ "tags": "proposal" }</code>
+                            </div>
+                            <button class="mongo-btn-copy" onclick="copySnippet('{ &quot;tags&quot;: &quot;proposal&quot; }')"><i class="far fa-copy"></i> Copy</button>
+                        </div>
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="font-size: 12px; font-weight: 700; color: #f4f4f5;">Filter: Audited PDF Merge Operations</div>
+                                <code style="font-size: 11.5px; color: #34d399; font-family: monospace;">{ "action": "PDF_MERGE" }</code>
+                            </div>
+                            <button class="mongo-btn-copy" onclick="copySnippet('{ &quot;action&quot;: &quot;PDF_MERGE&quot; }')"><i class="far fa-copy"></i> Copy</button>
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 700; color: #f4f4f5;">MongoDB Compass Aggregations</h4>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 0; margin-bottom: 16px;">In MongoDB Compass, navigate to the <strong>Aggregations</strong> tab and paste these stages:</p>
+
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong style="font-size: 12.5px; color: #f4f4f5;">Pipeline 1: Document Types & Total Storage Size</strong>
+                                <button class="mongo-btn-copy" onclick="copySnippet('[ { &quot;$group&quot;: { &quot;_id&quot;: &quot;$type&quot;, &quot;count&quot;: { &quot;$sum&quot;: 1 }, &quot;totalBytes&quot;: { &quot;$sum&quot;: &quot;$size&quot; } } }, { &quot;$sort&quot;: { &quot;count&quot;: -1 } } ]')"><i class="far fa-copy"></i> Copy Pipeline</button>
+                            </div>
+                            <pre class="mongo-json-view">[
+  { "$group": { "_id": "$type", "count": { "$sum": 1 }, "totalBytes": { "$sum": "$size" } } },
+  { "$sort": { "count": -1 } }
+]</pre>
+                        </div>
+
+                        <div style="background: #141720; border: 1px solid #27272a; border-radius: 8px; padding: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <strong style="font-size: 12.5px; color: #f4f4f5;">Pipeline 2: Tag Cloud & Usage Frequency</strong>
+                                <button class="mongo-btn-copy" onclick="copySnippet('[ { &quot;$unwind&quot;: &quot;$tags&quot; }, { &quot;$group&quot;: { &quot;_id&quot;: &quot;$tags&quot;, &quot;frequency&quot;: { &quot;$sum&quot;: 1 } } }, { &quot;$sort&quot;: { &quot;frequency&quot;: -1 } } ]')"><i class="far fa-copy"></i> Copy Pipeline</button>
+                            </div>
+                            <pre class="mongo-json-view">[
+  { "$unwind": "$tags" },
+  { "$group": { "_id": "$tags", "frequency": { "$sum": 1 } } },
+  { "$sort": { "frequency": -1 } }
+]</pre>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="padding: 12px 22px; border-top: 1px solid #27272a; background: #141720; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11.5px; color: #94a3b8;">
+                    Connected to <strong style="color: #34d399;">mongodb://127.0.0.1:27017/</strong>
+                </span>
+                <button type="button" class="action-btn btn-secondary" onclick="closeMongoCompassModal()">Close Hub</button>
             </div>
         </div>
     </div>

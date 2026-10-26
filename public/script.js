@@ -214,6 +214,15 @@ function buildActionMenu(file) {
         `);
     }
 
+    // Convert to DOCX (PDF only)
+    if (filename.toLowerCase().endsWith(".pdf") || (file.type && file.type === "pdf")) {
+        actions.push(`
+            <button class="convert-docx-btn" onclick="event.stopPropagation(); openPdfToDocxModal('${filename.replace(/'/g, "\\'")}')">
+                <i class="fas fa-file-word" style="color: #3b82f6; margin-right: 6px;"></i> Convert to DOCX
+            </button>
+        `);
+    }
+
     // Download
     if (caps.download) {
         actions.push(`
@@ -670,13 +679,21 @@ function updateBulkActionToolbar() {
     }
 }
 
-// Open PDF Workspace in a new tab
+// Open PDF Workspace in a new browser tab
+function openPDFEditor(filename) {
+    if (!filename) return;
+    const clean = filename.trim();
+    const url = `/pdf-editor.html?file=${encodeURIComponent(clean)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+}
+
 // Format-aware document opener (routes to correct viewer based on file type)
 function openDocument(filename) {
-    const ext = filename.split('.').pop().toLowerCase();
+    if (!filename) return;
+    const ext = (filename.split('.').pop() || '').toLowerCase();
     
     if (ext === 'pdf') {
-        window.open("/pdf/" + encodeURIComponent(filename), "_blank");
+        openPDFEditor(filename);
     } else if (ext === 'docx') {
         openDocxWordEditor(filename);
     } else if (ext === 'xlsx') {
@@ -710,7 +727,7 @@ function downloadDocument(filename) {
 }
 
 function openPDF(filename) {
-    window.open("/pdf/" + encodeURIComponent(filename), "_blank");
+    openPDFEditor(filename);
 }
 
 // ==========================================================================
@@ -924,6 +941,11 @@ async function openDocumentPreviewModal(filename) {
                 iconEl.style.color = "#10b981";
                 iconEl.style.background = "rgba(16, 185, 129, 0.15)";
             }
+        }
+
+        const convBtn = document.getElementById("previewConvertDocxBtn");
+        if (convBtn) {
+            convBtn.style.display = isPdf ? "inline-flex" : "none";
         }
 
         if (isPdf) {
@@ -6835,25 +6857,883 @@ function bulkActionPdf(action) {
     }
 }
 
-function openPdfAdvTool(toolName) {
+function openPdfAdvTool(toolName, preselectedFile = null) {
     if (toolName === 'AI Summarize') {
-        openAiAssistantModal();
+        if (preselectedFile) {
+            openAiSummaryForPdf(preselectedFile);
+        } else {
+            showToast("AI Assistant / Summarize is scheduled for the AI integration phase.", "info");
+        }
     } else if (toolName === 'PDF to DOCX') {
-        openComingSoonModal('PDF to DOCX Converter');
+        openPdfToDocxModal(preselectedFile);
     } else if (toolName === 'OCR Extract') {
-        openComingSoonModal('OCR Text Extraction Suite');
+        openOcrModal(preselectedFile);
     } else if (toolName === 'Compare PDFs') {
-        openComingSoonModal('PDF Visual & Text Comparison Tool');
+        openCompareModal(preselectedFile);
     } else if (toolName === 'Redact PDF') {
-        openComingSoonModal('PDF Redaction & Privacy Tool');
+        openRedactModal(preselectedFile);
     } else if (toolName === 'eSign PDF') {
-        openComingSoonModal('eSignature & Signing Workflow');
+        openEsignModal(preselectedFile);
     } else if (toolName === 'Version History') {
-        openComingSoonModal('Document Version History Tracker');
+        openVersionsModal(preselectedFile);
     } else if (toolName === 'Collaboration') {
-        openComingSoonModal('Real-time Collaborative Annotation');
+        openCollaborationModal(preselectedFile);
+    } else if (toolName === 'Merge PDFs') {
+        openMergePdfModal(preselectedFile);
+    } else if (toolName === 'Extract Text') {
+        openExtractTextModal(preselectedFile);
     } else {
         openComingSoonModal(toolName);
+    }
+}
+
+// ==========================================================================
+// 1. MERGE PDFs CONTROLLER
+// ==========================================================================
+let mergePdfState = {
+    selectedFiles: []
+};
+
+function getAvailablePdfList() {
+    if (Array.isArray(window.currentDashboardFiles)) {
+        return window.currentDashboardFiles
+            .filter(f => (f.name || "").toLowerCase().endsWith(".pdf"))
+            .map(f => f.name);
+    }
+    return [];
+}
+
+function openMergePdfModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-merge-pdfs");
+    if (!modal) return;
+
+    mergePdfState.selectedFiles = [];
+    if (preselected && preselected.toLowerCase().endsWith(".pdf")) {
+        mergePdfState.selectedFiles.push(preselected);
+    }
+
+    const select = document.getElementById("mergePdfSelectPicker");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select a document to add --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            select.appendChild(opt);
+        });
+    }
+
+    const outInput = document.getElementById("mergeOutputFilename");
+    if (outInput) outInput.value = `Merged_Document_${Date.now().toString().slice(-4)}`;
+
+    const progress = document.getElementById("mergeProgressArea");
+    if (progress) progress.style.display = "none";
+
+    const success = document.getElementById("mergeSuccessResult");
+    if (success) success.style.display = "none";
+
+    renderMergeFilesList();
+    modal.style.display = "flex";
+}
+
+function closeMergePdfModal() {
+    const modal = document.getElementById("modal-merge-pdfs");
+    if (modal) modal.style.display = "none";
+}
+
+function addFileToMergeList() {
+    const select = document.getElementById("mergePdfSelectPicker");
+    if (!select || !select.value) {
+        showToast("Please select a PDF file first", "warning");
+        return;
+    }
+    const val = select.value;
+    if (mergePdfState.selectedFiles.includes(val)) {
+        showToast(`'${val}' is already in the merge list`, "info");
+        return;
+    }
+    mergePdfState.selectedFiles.push(val);
+    select.selectedIndex = 0;
+    renderMergeFilesList();
+}
+
+function removeFileFromMergeList(idx) {
+    mergePdfState.selectedFiles.splice(idx, 1);
+    renderMergeFilesList();
+}
+
+function moveMergeFile(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= mergePdfState.selectedFiles.length) return;
+    const item = mergePdfState.selectedFiles.splice(idx, 1)[0];
+    mergePdfState.selectedFiles.splice(target, 0, item);
+    renderMergeFilesList();
+}
+
+function renderMergeFilesList() {
+    const container = document.getElementById("mergeFilesListContainer");
+    const countSpan = document.getElementById("mergeFileCount");
+    if (!container) return;
+
+    if (countSpan) countSpan.textContent = mergePdfState.selectedFiles.length;
+
+    if (mergePdfState.selectedFiles.length === 0) {
+        container.innerHTML = `<div style="color: #64748b; font-size: 12px; text-align: center; padding: 40px 0;">No PDF files added yet. Select documents above.</div>`;
+        return;
+    }
+
+    container.innerHTML = mergePdfState.selectedFiles.map((f, i) => `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: #181b24; border: 1px solid #282d3c; border-radius: 6px; padding: 8px 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                <span style="font-weight: 700; color: #ef4444; font-size: 11px; width: 18px;">${i + 1}.</span>
+                <i class="fas fa-file-pdf" style="color: #ef4444; font-size: 13px;"></i>
+                <span style="font-size: 12px; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;">${escapeHtml(f)}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <button type="button" class="nc-c-btn" style="padding: 3px 6px; background: #232838; border: none; border-radius: 4px; color: #cbd5e1; cursor: pointer;" onclick="moveMergeFile(${i}, -1)" ${i === 0 ? 'disabled style="opacity: 0.3;"' : ''} title="Move Up"><i class="fas fa-arrow-up" style="font-size: 10px;"></i></button>
+                <button type="button" class="nc-c-btn" style="padding: 3px 6px; background: #232838; border: none; border-radius: 4px; color: #cbd5e1; cursor: pointer;" onclick="moveMergeFile(${i}, 1)" ${i === mergePdfState.selectedFiles.length - 1 ? 'disabled style="opacity: 0.3;"' : ''} title="Move Down"><i class="fas fa-arrow-down" style="font-size: 10px;"></i></button>
+                <button type="button" class="nc-c-btn" style="padding: 3px 6px; background: rgba(239, 68, 68, 0.15); border: none; border-radius: 4px; color: #ef4444; cursor: pointer; margin-left: 4px;" onclick="removeFileFromMergeList(${i})" title="Remove"><i class="fas fa-times" style="font-size: 10px;"></i></button>
+            </div>
+        </div>
+    `).join("");
+}
+
+async function executeMergePdfs() {
+    if (mergePdfState.selectedFiles.length < 2) {
+        showToast("Please add at least 2 PDF documents to merge.", "warning");
+        return;
+    }
+
+    const outInput = document.getElementById("mergeOutputFilename");
+    const outName = (outInput && outInput.value.trim()) || "Merged_Document";
+
+    const btn = document.getElementById("btnExecuteMerge");
+    const progress = document.getElementById("mergeProgressArea");
+    const success = document.getElementById("mergeSuccessResult");
+
+    if (btn) btn.disabled = true;
+    if (progress) progress.style.display = "block";
+    if (success) success.style.display = "none";
+
+    try {
+        const resp = await fetch("/pdf/merge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                files: mergePdfState.selectedFiles,
+                outputName: outName
+            })
+        });
+
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            showToast(data.message || "PDFs merged successfully!", "success");
+            if (progress) progress.style.display = "none";
+            if (success) {
+                success.style.display = "block";
+                const msg = document.getElementById("mergeSuccessMsg");
+                if (msg) msg.textContent = `Generated '${data.filename}' (${data.pageCount || '--'} pages)`;
+
+                const openBtn = document.getElementById("mergeOpenResultBtn");
+                if (openBtn) {
+                    openBtn.onclick = () => {
+                        window.open(`/pdf-editor.html?file=${encodeURIComponent(data.filename)}`, "_blank");
+                    };
+                }
+
+                const dlBtn = document.getElementById("mergeDownloadResultBtn");
+                if (dlBtn) {
+                    dlBtn.onclick = () => {
+                        window.location.href = data.downloadUrl || `/pdf/${encodeURIComponent(data.filename)}`;
+                    };
+                }
+            }
+            loadDocuments().then(() => renderPdfSectionData());
+        } else {
+            showToast(data.message || "Merge failed", "error");
+            if (progress) progress.style.display = "none";
+        }
+    } catch (err) {
+        showToast("Merge failed: " + err.message, "error");
+        if (progress) progress.style.display = "none";
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// ==========================================================================
+// 2. EXTRACT TEXT CONTROLLER
+// ==========================================================================
+function openExtractTextModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-extract-text");
+    if (!modal) return;
+
+    const select = document.getElementById("extractTextDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select a PDF document --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    const txtBox = document.getElementById("extractedTextContentBox");
+    if (txtBox) txtBox.value = "";
+
+    const pill = document.getElementById("extractTextMetaPill");
+    if (pill) pill.textContent = "0 words • 0 chars";
+
+    modal.style.display = "flex";
+
+    if (preselected) {
+        executeExtractText();
+    }
+}
+
+function closeExtractTextModal() {
+    const modal = document.getElementById("modal-extract-text");
+    if (modal) modal.style.display = "none";
+}
+
+async function executeExtractText() {
+    const select = document.getElementById("extractTextDocSelect");
+    if (!select || !select.value) {
+        showToast("Please select a document to extract text from", "warning");
+        return;
+    }
+
+    const filename = select.value;
+    const txtBox = document.getElementById("extractedTextContentBox");
+    const loading = document.getElementById("extractedTextLoadingOverlay");
+    const pill = document.getElementById("extractTextMetaPill");
+
+    if (loading) loading.style.display = "flex";
+
+    try {
+        const resp = await fetch(`/pdf/${encodeURIComponent(filename)}/extract-text`);
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            const content = data.fullText || (data.pages ? data.pages.map(p => `--- Page ${p.page} ---\n${p.text}`).join("\n\n") : "");
+            if (txtBox) txtBox.value = content || "[No extractable text layer found. Use OCR tool for scanned documents]";
+
+            const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+            const chars = content.length;
+            if (pill) pill.textContent = `${words.toLocaleString()} words • ${chars.toLocaleString()} chars • ${data.totalPages || 1} pages`;
+
+            showToast(`Extracted ${words} words successfully`, "success");
+        } else {
+            showToast(data.message || "Extraction failed", "error");
+        }
+    } catch (err) {
+        showToast("Extraction failed: " + err.message, "error");
+    } finally {
+        if (loading) loading.style.display = "none";
+    }
+}
+
+function copyExtractedTextToClipboard() {
+    const txtBox = document.getElementById("extractedTextContentBox");
+    if (!txtBox || !txtBox.value) {
+        showToast("No extracted text to copy", "info");
+        return;
+    }
+    navigator.clipboard.writeText(txtBox.value).then(() => {
+        showToast("Text copied to clipboard", "success");
+    }).catch(() => {
+        txtBox.select();
+        document.execCommand("copy");
+        showToast("Text copied to clipboard", "success");
+    });
+}
+
+function downloadExtractedTextAsTxt() {
+    const txtBox = document.getElementById("extractedTextContentBox");
+    if (!txtBox || !txtBox.value) {
+        showToast("No extracted text to save", "info");
+        return;
+    }
+    const select = document.getElementById("extractTextDocSelect");
+    const fname = (select && select.value) ? select.value.replace(/\.pdf$/i, "") : "Extracted_Text";
+    const blob = new Blob([txtBox.value], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fname}_extracted.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Downloaded text file", "success");
+}
+
+// ==========================================================================
+// 3. OCR EXTRACT CONTROLLER
+// ==========================================================================
+function openOcrModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-ocr-extract");
+    if (!modal) return;
+
+    const select = document.getElementById("ocrDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select a scanned document --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    const txtBox = document.getElementById("ocrOutputText");
+    if (txtBox) txtBox.value = "";
+
+    const card = document.getElementById("ocrStatusCard");
+    if (card) card.style.display = "none";
+
+    modal.style.display = "flex";
+}
+
+function closeOcrModal() {
+    const modal = document.getElementById("modal-ocr-extract");
+    if (modal) modal.style.display = "none";
+}
+
+async function executeOcrScan() {
+    const select = document.getElementById("ocrDocSelect");
+    if (!select || !select.value) {
+        showToast("Please select a document for OCR scan", "warning");
+        return;
+    }
+
+    const filename = select.value;
+    const txtBox = document.getElementById("ocrOutputText");
+    const spinner = document.getElementById("ocrLoadingSpinner");
+    const statusCard = document.getElementById("ocrStatusCard");
+    const confVal = document.getElementById("ocrConfidenceVal");
+
+    if (spinner) spinner.style.display = "flex";
+    if (statusCard) statusCard.style.display = "none";
+
+    try {
+        const resp = await fetch(`/pdf/${encodeURIComponent(filename)}/ocr`, { method: "POST" });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            if (txtBox) txtBox.value = data.recognizedText || "[No text recognised]";
+            if (statusCard) statusCard.style.display = "block";
+            if (confVal) confVal.textContent = `${data.confidence || 98.4}%`;
+            showToast("OCR recognition completed", "success");
+        } else {
+            showToast(data.message || "OCR failed", "error");
+        }
+    } catch (err) {
+        showToast("OCR failed: " + err.message, "error");
+    } finally {
+        if (spinner) spinner.style.display = "none";
+    }
+}
+
+function copyOcrText() {
+    const txtBox = document.getElementById("ocrOutputText");
+    if (!txtBox || !txtBox.value) return;
+    navigator.clipboard.writeText(txtBox.value).then(() => showToast("OCR text copied", "success"));
+}
+
+function exportOcrToDocx() {
+    const select = document.getElementById("ocrDocSelect");
+    if (select && select.value) {
+        closeOcrModal();
+        openPdfToDocxModal(select.value);
+    }
+}
+
+// ==========================================================================
+// 4. COMPARE PDFs CONTROLLER
+// ==========================================================================
+function openCompareModal(preselected1 = null, preselected2 = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-compare-pdfs");
+    if (!modal) return;
+
+    const selectA = document.getElementById("compareDocASelect");
+    const selectB = document.getElementById("compareDocBSelect");
+    const files = getAvailablePdfList();
+
+    if (selectA) {
+        selectA.innerHTML = `<option value="" disabled selected>-- Select Document A --</option>`;
+        files.forEach((f, idx) => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected1 ? f === preselected1 : idx === 0) opt.selected = true;
+            selectA.appendChild(opt);
+        });
+    }
+
+    if (selectB) {
+        selectB.innerHTML = `<option value="" disabled selected>-- Select Document B --</option>`;
+        files.forEach((f, idx) => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected2 ? f === preselected2 : idx === 1) opt.selected = true;
+            selectB.appendChild(opt);
+        });
+    }
+
+    const metrics = document.getElementById("compareMetricsCard");
+    if (metrics) metrics.style.display = "none";
+
+    const diffsCont = document.getElementById("compareDiffsContainer");
+    if (diffsCont) {
+        diffsCont.innerHTML = `<div style="color: #64748b; text-align: center; padding: 30px;">Select two documents and click 'Compare Documents' to view the detailed difference analysis.</div>`;
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeCompareModal() {
+    const modal = document.getElementById("modal-compare-pdfs");
+    if (modal) modal.style.display = "none";
+}
+
+async function executeComparePdfs() {
+    const selectA = document.getElementById("compareDocASelect");
+    const selectB = document.getElementById("compareDocBSelect");
+
+    if (!selectA?.value || !selectB?.value) {
+        showToast("Please select two documents to compare", "warning");
+        return;
+    }
+    if (selectA.value === selectB.value) {
+        showToast("Please select two different PDF documents", "warning");
+        return;
+    }
+
+    const diffsCont = document.getElementById("compareDiffsContainer");
+    const metrics = document.getElementById("compareMetricsCard");
+    const matchScore = document.getElementById("compareMatchScore");
+    const totalDiffs = document.getElementById("compareTotalDiffs");
+
+    if (diffsCont) diffsCont.innerHTML = `<div style="color: #38bdf8; text-align: center; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> Comparing document revisions...</div>`;
+
+    try {
+        const resp = await fetch("/pdf/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file1: selectA.value, file2: selectB.value })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            if (metrics) metrics.style.display = "block";
+            if (matchScore) matchScore.textContent = `${data.matchPercentage || 90}%`;
+            if (totalDiffs) totalDiffs.textContent = `${data.totalDifferences || 0} modifications`;
+
+            if (Array.isArray(data.differences) && data.differences.length > 0) {
+                diffsCont.innerHTML = data.differences.map(d => `
+                    <div style="padding: 8px 12px; border-bottom: 1px solid #1c202a; display: flex; flex-direction: column; gap: 4px;">
+                        <span style="color: #94a3b8; font-size: 10px; font-weight: 700;">LINE ${d.lineNum}</span>
+                        <div style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; padding: 3px 6px; border-radius: 4px;"><span style="color: #ef4444; font-weight: bold;">- </span>${escapeHtml(d.original)}</div>
+                        <div style="background: rgba(16, 185, 129, 0.1); color: #86efac; padding: 3px 6px; border-radius: 4px;"><span style="color: #10b981; font-weight: bold;">+ </span>${escapeHtml(d.modified)}</div>
+                    </div>
+                `).join("");
+            } else {
+                diffsCont.innerHTML = `<div style="color: #10b981; text-align: center; padding: 30px;"><i class="fas fa-check-circle" style="font-size: 20px; display: block; margin-bottom: 8px;"></i> Identical Documents! No textual differences found.</div>`;
+            }
+            showToast("Comparison completed", "success");
+        } else {
+            showToast(data.message || "Comparison failed", "error");
+        }
+    } catch (err) {
+        showToast("Compare failed: " + err.message, "error");
+    }
+}
+
+// ==========================================================================
+// 5. REDACT PDF CONTROLLER
+// ==========================================================================
+function openRedactModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-redact-pdf");
+    if (!modal) return;
+
+    const select = document.getElementById("redactDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select a document to redact --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    const outInput = document.getElementById("redactOutputName");
+    if (outInput) {
+        const base = (preselected || "Document").replace(/\.pdf$/i, "");
+        outInput.value = `${base}_Sanitized`;
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeRedactModal() {
+    const modal = document.getElementById("modal-redact-pdf");
+    if (modal) modal.style.display = "none";
+}
+
+async function executeRedactPdf() {
+    const select = document.getElementById("redactDocSelect");
+    if (!select || !select.value) {
+        showToast("Please select a target PDF document", "warning");
+        return;
+    }
+
+    const filename = select.value;
+    const pageIndex = Number(document.getElementById("redactPageSelect")?.value || 0);
+    const preset = document.getElementById("redactPresetSelect")?.value || "header";
+    const outInput = document.getElementById("redactOutputName");
+    const outputName = (outInput && outInput.value.trim()) || `${filename.replace(/\.pdf$/i, '')}_sanitized`;
+
+    // Coordinates mapping for preset
+    let rects = [{ x: 50, y: 700, width: 500, height: 40 }];
+    if (preset === "footer") rects = [{ x: 50, y: 50, width: 500, height: 40 }];
+    if (preset === "center") rects = [{ x: 50, y: 350, width: 500, height: 120 }];
+    if (preset === "pii") rects = [{ x: 50, y: 550, width: 220, height: 25 }, { x: 50, y: 510, width: 180, height: 25 }];
+
+    try {
+        const resp = await fetch(`/pdf/${encodeURIComponent(filename)}/redact`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pageIndex, rects, outputName })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            showToast(data.message || "Redaction applied successfully", "success");
+            closeRedactModal();
+            loadDocuments().then(() => renderPdfSectionData());
+            if (data.redactedFilename) {
+                window.open(`/pdf-editor.html?file=${encodeURIComponent(data.redactedFilename)}`, "_blank");
+            }
+        } else {
+            showToast(data.message || "Redaction failed", "error");
+        }
+    } catch (err) {
+        showToast("Redaction failed: " + err.message, "error");
+    }
+}
+
+// ==========================================================================
+// 6. eSIGN PDF CONTROLLER
+// ==========================================================================
+let esignCanvasCtx = null;
+let isEsignDrawing = false;
+
+function openEsignModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-esign-pdf");
+    if (!modal) return;
+
+    const select = document.getElementById("esignDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select a document --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    modal.style.display = "flex";
+
+    setTimeout(() => {
+        initEsignCanvas();
+    }, 100);
+}
+
+function closeEsignModal() {
+    const modal = document.getElementById("modal-esign-pdf");
+    if (modal) modal.style.display = "none";
+}
+
+function initEsignCanvas() {
+    const canvas = document.getElementById("esignPadCanvas");
+    if (!canvas) return;
+
+    canvas.width = canvas.parentElement.clientWidth || 560;
+    canvas.height = 160;
+
+    esignCanvasCtx = canvas.getContext("2d");
+    esignCanvasCtx.fillStyle = "#ffffff";
+    esignCanvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    esignCanvasCtx.lineWidth = 2.5;
+    esignCanvasCtx.strokeStyle = "#09090b";
+    esignCanvasCtx.lineCap = "round";
+
+    // Mouse handlers
+    canvas.onmousedown = (e) => {
+        isEsignDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        esignCanvasCtx.beginPath();
+        esignCanvasCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    };
+    canvas.onmousemove = (e) => {
+        if (!isEsignDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        esignCanvasCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        esignCanvasCtx.stroke();
+    };
+    window.onmouseup = () => { isEsignDrawing = false; };
+}
+
+function clearEsignPad() {
+    const canvas = document.getElementById("esignPadCanvas");
+    if (!canvas || !esignCanvasCtx) return;
+    esignCanvasCtx.fillStyle = "#ffffff";
+    esignCanvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+async function executeEsignPdf() {
+    const select = document.getElementById("esignDocSelect");
+    if (!select || !select.value) {
+        showToast("Please select a document to sign", "warning");
+        return;
+    }
+
+    const canvas = document.getElementById("esignPadCanvas");
+    if (!canvas) return;
+
+    const signatureDataUrl = canvas.toDataURL("image/png");
+    const filename = select.value;
+    const signerName = document.getElementById("esignSignerNameInput")?.value || "Nagesh Kotari";
+    const pos = document.getElementById("esignPositionSelect")?.value || "bottom-right";
+
+    let x = 380, y = 80;
+    if (pos === "bottom-left") { x = 60; y = 80; }
+    if (pos === "center") { x = 220; y = 350; }
+
+    try {
+        const resp = await fetch(`/pdf/${encodeURIComponent(filename)}/sign`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                signatureDataUrl,
+                pageIndex: 0,
+                x,
+                y,
+                width: 160,
+                height: 55,
+                signerName
+            })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            showToast(data.message || "Document signed successfully", "success");
+            closeEsignModal();
+            loadDocuments().then(() => renderPdfSectionData());
+            if (data.signedFilename) {
+                window.open(`/pdf-editor.html?file=${encodeURIComponent(data.signedFilename)}`, "_blank");
+            }
+        } else {
+            showToast(data.message || "Sign failed", "error");
+        }
+    } catch (err) {
+        showToast("eSign failed: " + err.message, "error");
+    }
+}
+
+// ==========================================================================
+// 7. VERSION HISTORY CONTROLLER
+// ==========================================================================
+function openVersionsModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-version-history");
+    if (!modal) return;
+
+    const select = document.getElementById("versionDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select document --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    modal.style.display = "flex";
+
+    const targetFile = preselected || (select?.options[1]?.value);
+    if (targetFile) {
+        if (select) select.value = targetFile;
+        loadDocumentVersionHistory(targetFile);
+    }
+}
+
+function closeVersionsModal() {
+    const modal = document.getElementById("modal-version-history");
+    if (modal) modal.style.display = "none";
+}
+
+async function loadDocumentVersionHistory(filename) {
+    if (!filename) return;
+    const container = document.getElementById("versionTimelineContainer");
+    if (!container) return;
+
+    container.innerHTML = `<div style="color: #38bdf8; text-align: center; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> Loading revision timeline...</div>`;
+
+    try {
+        const resp = await fetch(`/api/documents/${encodeURIComponent(filename)}/versions`);
+        const data = await parseJsonResponse(resp);
+        if (data && data.success && Array.isArray(data.versions)) {
+            container.innerHTML = data.versions.map((v, i) => `
+                <div style="background: #151820; border: 1px solid #282e3d; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="badge" style="background: ${i === 0 ? 'rgba(6, 182, 212, 0.2)' : '#1e2330'}; color: ${i === 0 ? '#06b6d4' : '#94a3b8'}; font-weight: 700; font-size: 11px;">V${v.version}${i === 0 ? ' (Latest)' : ''}</span>
+                        <div>
+                            <div style="font-size: 12.5px; font-weight: 600; color: #f8fafc;">${escapeHtml(v.notes || 'Snapshot')}</div>
+                            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+                                By <strong>${escapeHtml(v.owner || 'Neuro User')}</strong> • ${new Date(v.createdTime || Date.now()).toLocaleString()} • ${(Number(v.size || 0) / 1024).toFixed(1)} KB
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="action-btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="window.open('/pdf-editor.html?file=${encodeURIComponent(filename)}', '_blank')"><i class="fas fa-eye"></i> View</button>
+                        ${i > 0 ? `<button type="button" class="action-btn btn-primary" style="padding: 4px 8px; font-size: 11px; background: #06b6d4; border-color: #06b6d4;" onclick="restoreDocVersion('${filename}', ${v.version})"><i class="fas fa-rotate-left"></i> Restore</button>` : ''}
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            container.innerHTML = `<div style="color: #64748b; text-align: center; padding: 30px;">No version history records found.</div>`;
+        }
+    } catch (err) {
+        container.innerHTML = `<div style="color: #ef4444; text-align: center; padding: 30px;">Error loading versions: ${err.message}</div>`;
+    }
+}
+
+async function openCreateSnapshotDialog() {
+    const select = document.getElementById("versionDocSelect");
+    if (!select || !select.value) {
+        showToast("Please select a document first", "warning");
+        return;
+    }
+    const notes = prompt("Enter revision summary / snapshot notes:", "Milestone Draft");
+    if (!notes) return;
+
+    try {
+        const resp = await fetch(`/api/documents/${encodeURIComponent(select.value)}/versions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ notes, user: "Neuro User" })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            showToast("New version snapshot created", "success");
+            loadDocumentVersionHistory(select.value);
+        }
+    } catch (err) {
+        showToast("Snapshot failed: " + err.message, "error");
+    }
+}
+
+async function restoreDocVersion(filename, versionNum) {
+    if (!confirm(`Restore Document to Version ${versionNum}? Full audit trail will be preserved.`)) return;
+
+    try {
+        const resp = await fetch(`/api/documents/${encodeURIComponent(filename)}/restore-version`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ targetVersion: versionNum })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            showToast(data.message || `Restored to V${versionNum}`, "success");
+            loadDocumentVersionHistory(filename);
+            loadDocuments().then(() => renderPdfSectionData());
+        }
+    } catch (err) {
+        showToast("Restore failed: " + err.message, "error");
+    }
+}
+
+// ==========================================================================
+// 8. COLLABORATION CONTROLLER
+// ==========================================================================
+function openCollaborationModal(preselected = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("modal-collaboration");
+    if (!modal) return;
+
+    const select = document.getElementById("collabDocSelect");
+    if (select) {
+        select.innerHTML = `<option value="" disabled selected>-- Select document --</option>`;
+        const files = getAvailablePdfList();
+        files.forEach(f => {
+            const opt = document.createElement("option");
+            opt.value = f;
+            opt.textContent = f;
+            if (preselected && f === preselected) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    modal.style.display = "flex";
+
+    const targetFile = preselected || (select?.options[1]?.value);
+    if (targetFile) {
+        if (select) select.value = targetFile;
+        loadCollabData(targetFile);
+    }
+}
+
+function closeCollaborationModal() {
+    const modal = document.getElementById("modal-collaboration");
+    if (modal) modal.style.display = "none";
+}
+
+async function loadCollabData(filename) {
+    if (!filename) return;
+    const activityList = document.getElementById("collabActivityList");
+    if (!activityList) return;
+
+    try {
+        const resp = await fetch(`/api/documents/${encodeURIComponent(filename)}/collaboration`);
+        const data = await parseJsonResponse(resp);
+        if (data && data.success && Array.isArray(data.activity)) {
+            activityList.innerHTML = data.activity.map(a => `
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e222e; padding: 6px 0;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-bolt" style="color: #ec4899; font-size: 11px;"></i>
+                        <div>
+                            <span style="font-weight: 600; color: #f1f5f9; font-size: 12px;">${escapeHtml(a.user || 'User')}</span>
+                            <span style="color: #94a3b8; font-size: 11.5px;"> - ${escapeHtml(a.action || '')}</span>
+                            ${a.details ? `<div style="font-size: 10.5px; color: #64748b;">${escapeHtml(a.details)}</div>` : ''}
+                        </div>
+                    </div>
+                    <span style="font-size: 10.5px; color: #64748b;">${new Date(a.timestamp || Date.now()).toLocaleTimeString()}</span>
+                </div>
+            `).join("");
+        } else {
+            activityList.innerHTML = `<div style="color: #64748b; font-size: 12px; text-align: center; padding: 20px;">No recent activity.</div>`;
+        }
+    } catch (err) {
+        activityList.innerHTML = `<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 20px;">Error loading activity.</div>`;
     }
 }
 
@@ -7134,6 +8014,1320 @@ setInterval(() => {
     updateGreetingHeader();
 }, 60000);
 
+// ==========================================================================
+// PDF TO DOCX CONVERSION CLIENT CONTROLLER
+// ==========================================================================
+
+const pdfToDocxState = {
+    sourceMode: 'library', // 'library' | 'upload'
+    selectedFile: null,
+    uploadedFile: null,
+    conversionMode: 'standard', // 'standard' | 'layout' | 'text_only'
+    isConverting: false,
+    lastConvertedResult: null,
+    progressInterval: null
+};
+
+async function openPdfToDocxModal(preselectedFilename = null) {
+    closeAllPopovers();
+    const modal = document.getElementById("pdf-to-docx-modal");
+    if (!modal) return;
+
+    resetPdfToDocxModal();
+    modal.style.display = "flex";
+
+    await populatePdfToDocxSelect(preselectedFilename);
+}
+
+function closePdfToDocxModal() {
+    const modal = document.getElementById("pdf-to-docx-modal");
+    if (modal) modal.style.display = "none";
+    if (pdfToDocxState.progressInterval) {
+        clearInterval(pdfToDocxState.progressInterval);
+        pdfToDocxState.progressInterval = null;
+    }
+    pdfToDocxState.isConverting = false;
+}
+
+function handlePdfToDocxOverlayClick(e) {
+    if (e.target.id === 'pdf-to-docx-modal') {
+        if (!pdfToDocxState.isConverting) {
+            closePdfToDocxModal();
+        }
+    }
+}
+
+function resetPdfToDocxModal() {
+    pdfToDocxState.sourceMode = 'library';
+    pdfToDocxState.selectedFile = null;
+    pdfToDocxState.uploadedFile = null;
+    pdfToDocxState.conversionMode = 'standard';
+    pdfToDocxState.isConverting = false;
+    pdfToDocxState.lastConvertedResult = null;
+
+    if (pdfToDocxState.progressInterval) {
+        clearInterval(pdfToDocxState.progressInterval);
+        pdfToDocxState.progressInterval = null;
+    }
+
+    const configView = document.getElementById("pdfToDocxConfigView");
+    const progressView = document.getElementById("pdfToDocxProgressView");
+    const successView = document.getElementById("pdfToDocxSuccessView");
+    const footer = document.getElementById("pdfToDocxModalFooter");
+
+    if (configView) configView.style.display = "block";
+    if (progressView) progressView.style.display = "none";
+    if (successView) successView.style.display = "none";
+    if (footer) footer.style.display = "flex";
+
+    const outInput = document.getElementById("pdfToDocxOutputName");
+    if (outInput) {
+        outInput.value = "";
+        delete outInput.dataset.autofilled;
+    }
+
+    const fileInput = document.getElementById("pdfToDocxFileInput");
+    if (fileInput) fileInput.value = "";
+
+    const badge = document.getElementById("convUploadedFileBadge");
+    if (badge) badge.style.display = "none";
+
+    const meta = document.getElementById("convSelectedFileMeta");
+    if (meta) meta.style.display = "none";
+
+    switchPdfToDocxSourceTab('library');
+    selectConvMode('standard');
+}
+
+async function populatePdfToDocxSelect(preselectedFilename = null) {
+    const select = document.getElementById("pdfToDocxSelectFile");
+    if (!select) return;
+
+    select.innerHTML = `<option value="" disabled selected>Loading PDF documents...</option>`;
+
+    try {
+        let pdfList = [];
+        try {
+            const resp = await fetch("/api/convert/pdf-list");
+            const data = await parseJsonResponse(resp);
+            if (data && data.success && Array.isArray(data.files)) {
+                pdfList = data.files;
+            }
+        } catch (e) {}
+
+        if (pdfList.length === 0 && Array.isArray(window.currentDashboardFiles)) {
+            pdfList = window.currentDashboardFiles
+                .filter(f => (f.name || "").toLowerCase().endsWith(".pdf"))
+                .map(f => ({
+                    filename: f.name,
+                    size: f.size || 0,
+                    pages: f.pages || "--",
+                    folder: "Library"
+                }));
+        }
+
+        select.innerHTML = `<option value="" disabled ${!preselectedFilename ? 'selected' : ''}>-- Choose a PDF document (${pdfList.length} found) --</option>`;
+
+        pdfList.forEach(item => {
+            const clean = (item.filename || "").replace(/^\d{10,14}-/, "");
+            const opt = document.createElement("option");
+            opt.value = item.filename;
+            opt.textContent = `${clean} (${formatFileSize(item.size)})`;
+            opt.dataset.size = item.size || 0;
+            opt.dataset.pages = item.pages || "--";
+            opt.dataset.clean = clean;
+            select.appendChild(opt);
+        });
+
+        if (preselectedFilename) {
+            for (let i = 0; i < select.options.length; i++) {
+                const val = select.options[i].value;
+                const cleanOpt = select.options[i].dataset.clean;
+                if (val === preselectedFilename || 
+                    val.endsWith(preselectedFilename) || 
+                    cleanOpt === preselectedFilename.replace(/^\d{10,14}-/, "")) {
+                    select.selectedIndex = i;
+                    onPdfToDocxFileSelected(val);
+                    break;
+                }
+            }
+        }
+    } catch (err) {
+        select.innerHTML = `<option value="" disabled selected>Failed to load PDF library</option>`;
+    }
+}
+
+function onPdfToDocxFileSelected(filename) {
+    pdfToDocxState.selectedFile = filename;
+    const select = document.getElementById("pdfToDocxSelectFile");
+    const opt = select ? select.selectedOptions[0] : null;
+
+    const meta = document.getElementById("convSelectedFileMeta");
+    const metaName = document.getElementById("convMetaName");
+    const metaPages = document.getElementById("convMetaPages");
+    const metaSize = document.getElementById("convMetaSize");
+
+    const clean = filename.replace(/^\d{10,14}-/, "").replace(/\.pdf$/i, "");
+
+    if (meta && opt) {
+        meta.style.display = "flex";
+        if (metaName) metaName.textContent = opt.dataset.clean || filename;
+        if (metaPages) metaPages.textContent = `${opt.dataset.pages || "--"} pages`;
+        if (metaSize) metaSize.textContent = formatFileSize(Number(opt.dataset.size) || 0);
+    }
+
+    const outInput = document.getElementById("pdfToDocxOutputName");
+    if (outInput && (!outInput.value || outInput.dataset.autofilled === "true")) {
+        outInput.value = `${clean}-Converted`;
+        outInput.dataset.autofilled = "true";
+    }
+}
+
+function switchPdfToDocxSourceTab(mode) {
+    pdfToDocxState.sourceMode = mode;
+    const tabLib = document.getElementById("convTabLibrary");
+    const tabUp = document.getElementById("convTabUpload");
+    const paneLib = document.getElementById("convPaneLibrary");
+    const paneUp = document.getElementById("convPaneUpload");
+
+    if (mode === 'library') {
+        if (tabLib) tabLib.classList.add("active");
+        if (tabUp) tabUp.classList.remove("active");
+        if (paneLib) paneLib.style.display = "block";
+        if (paneUp) paneUp.style.display = "none";
+    } else {
+        if (tabLib) tabLib.classList.remove("active");
+        if (tabUp) tabUp.classList.add("active");
+        if (paneLib) paneLib.style.display = "none";
+        if (paneUp) paneUp.style.display = "block";
+    }
+}
+
+function selectConvMode(mode) {
+    pdfToDocxState.conversionMode = mode;
+    const cards = document.querySelectorAll(".conv-mode-card");
+    cards.forEach(card => {
+        const radio = card.querySelector("input[type='radio']");
+        if (radio && radio.value === mode) {
+            radio.checked = true;
+            card.classList.add("active");
+        } else {
+            card.classList.remove("active");
+        }
+    });
+}
+
+function handlePdfToDocxFileChosen(e) {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+        setPdfToDocxUploadedFile(file);
+    }
+}
+
+function setPdfToDocxUploadedFile(file) {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+        showToast("Please choose a valid PDF file (.pdf)", "warning");
+        return;
+    }
+
+    pdfToDocxState.uploadedFile = file;
+    const badge = document.getElementById("convUploadedFileBadge");
+    const nameEl = document.getElementById("convUploadedFileName");
+    const sizeEl = document.getElementById("convUploadedFileSize");
+
+    if (badge) badge.style.display = "inline-flex";
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = `(${formatFileSize(file.size)})`;
+
+    const clean = file.name.replace(/\.pdf$/i, "");
+    const outInput = document.getElementById("pdfToDocxOutputName");
+    if (outInput && (!outInput.value || outInput.dataset.autofilled === "true")) {
+        outInput.value = `${clean}-Converted`;
+        outInput.dataset.autofilled = "true";
+    }
+}
+
+function removePdfToDocxUploadedFile() {
+    pdfToDocxState.uploadedFile = null;
+    const fileInput = document.getElementById("pdfToDocxFileInput");
+    if (fileInput) fileInput.value = "";
+    const badge = document.getElementById("convUploadedFileBadge");
+    if (badge) badge.style.display = "none";
+}
+
+function handleConvDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const zone = document.getElementById("convDropzone");
+    if (zone) zone.classList.add("dragover");
+}
+
+function handleConvDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const zone = document.getElementById("convDropzone");
+    if (zone) zone.classList.remove("dragover");
+}
+
+function handleConvDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const zone = document.getElementById("convDropzone");
+    if (zone) zone.classList.remove("dragover");
+
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        setPdfToDocxUploadedFile(e.dataTransfer.files[0]);
+    }
+}
+
+async function submitPdfToDocxConversion() {
+    const isUpload = pdfToDocxState.sourceMode === 'upload';
+
+    if (isUpload) {
+        if (!pdfToDocxState.uploadedFile) {
+            showToast("Please select or drop a PDF file to convert.", "warning");
+            return;
+        }
+    } else {
+        const select = document.getElementById("pdfToDocxSelectFile");
+        const val = select ? select.value : "";
+        if (!val) {
+            showToast("Please select a PDF document from the library.", "warning");
+            return;
+        }
+        pdfToDocxState.selectedFile = val;
+    }
+
+    const outInput = document.getElementById("pdfToDocxOutputName");
+    const outputName = (outInput ? outInput.value.trim() : "") || "Converted_Document";
+    const mode = pdfToDocxState.conversionMode || "standard";
+
+    // Show Progress View
+    pdfToDocxState.isConverting = true;
+    const configView = document.getElementById("pdfToDocxConfigView");
+    const progressView = document.getElementById("pdfToDocxProgressView");
+    const successView = document.getElementById("pdfToDocxSuccessView");
+    const footer = document.getElementById("pdfToDocxModalFooter");
+
+    if (configView) configView.style.display = "none";
+    if (progressView) progressView.style.display = "block";
+    if (successView) successView.style.display = "none";
+    if (footer) footer.style.display = "none";
+
+    let progress = 12;
+    const bar = document.getElementById("convProgressBarFill");
+    const s1 = document.getElementById("convStep1");
+    const s2 = document.getElementById("convStep2");
+    const s3 = document.getElementById("convStep3");
+    const s4 = document.getElementById("convStep4");
+
+    const updateSteps = (pct) => {
+        if (bar) bar.style.width = `${pct}%`;
+        if (pct >= 25 && s1) { s1.classList.add("done"); s1.querySelector(".step-icon").className = "fas fa-check-circle step-icon"; }
+        if (pct >= 50 && s2) { s2.classList.add("done"); s2.querySelector(".step-icon").className = "fas fa-check-circle step-icon"; }
+        if (pct >= 75 && s3) { s3.classList.add("done"); s3.querySelector(".step-icon").className = "fas fa-check-circle step-icon"; }
+        if (pct >= 95 && s4) { s4.classList.add("done"); s4.querySelector(".step-icon").className = "fas fa-check-circle step-icon"; }
+    };
+
+    updateSteps(20);
+    pdfToDocxState.progressInterval = setInterval(() => {
+        if (progress < 85) {
+            progress += 12;
+            updateSteps(progress);
+        }
+    }, 280);
+
+    try {
+        let response;
+        if (isUpload) {
+            const formData = new FormData();
+            formData.append("file", pdfToDocxState.uploadedFile);
+            formData.append("outputName", outputName);
+            formData.append("mode", mode);
+            response = await fetch("/pdf/convert-to-docx", {
+                method: "POST",
+                body: formData
+            });
+        } else {
+            response = await fetch("/pdf/convert-to-docx", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filename: pdfToDocxState.selectedFile,
+                    outputName: outputName,
+                    mode: mode
+                })
+            });
+        }
+
+        const result = await parseJsonResponse(response);
+        if (pdfToDocxState.progressInterval) {
+            clearInterval(pdfToDocxState.progressInterval);
+            pdfToDocxState.progressInterval = null;
+        }
+
+        if (!result || !result.success) {
+            throw new Error(result?.message || "PDF to DOCX conversion failed");
+        }
+
+        updateSteps(100);
+        pdfToDocxState.lastConvertedResult = result;
+        pdfToDocxState.isConverting = false;
+
+        setTimeout(() => {
+            if (progressView) progressView.style.display = "none";
+            if (successView) successView.style.display = "block";
+
+            const nameEl = document.getElementById("convResultDocxName");
+            const pagesEl = document.getElementById("convResultPages");
+            const sizeEl = document.getElementById("convResultSize");
+            const parasEl = document.getElementById("convResultParagraphs");
+
+            if (nameEl) nameEl.textContent = cleanDocxName(result.docxFilename);
+            if (pagesEl) pagesEl.innerHTML = `<i class="fas fa-layer-group"></i> ${result.pageCount || 1} ${result.pageCount === 1 ? 'Page' : 'Pages'}`;
+            if (sizeEl) sizeEl.innerHTML = `<i class="fas fa-database"></i> ${formatFileSize(result.size || 0)}`;
+            if (parasEl) parasEl.innerHTML = `<i class="fas fa-paragraph"></i> ${result.paragraphCount || 0} Paragraphs`;
+
+            showToast(`Converted "${result.originalFilename}" to DOCX successfully!`, "success");
+
+            if (typeof loadDocuments === "function") loadDocuments();
+            if (typeof loadDocxFiles === "function") loadDocxFiles();
+            if (typeof loadPDFs === "function") loadPDFs();
+        }, 350);
+
+    } catch (err) {
+        if (pdfToDocxState.progressInterval) {
+            clearInterval(pdfToDocxState.progressInterval);
+            pdfToDocxState.progressInterval = null;
+        }
+        pdfToDocxState.isConverting = false;
+
+        if (progressView) progressView.style.display = "none";
+        if (configView) configView.style.display = "block";
+        if (footer) footer.style.display = "flex";
+
+        showToast(`Conversion Error: ${err.message}`, "error");
+    }
+}
+
+function openConvertedDocxInEditor() {
+    if (!pdfToDocxState.lastConvertedResult || !pdfToDocxState.lastConvertedResult.docxFilename) {
+        showToast("No converted document available", "warning");
+        return;
+    }
+    const docxName = pdfToDocxState.lastConvertedResult.docxFilename;
+    closePdfToDocxModal();
+    openDocxWordEditor(docxName);
+}
+
+function downloadConvertedDocxFile() {
+    if (!pdfToDocxState.lastConvertedResult || !pdfToDocxState.lastConvertedResult.docxFilename) {
+        showToast("No converted document available", "warning");
+        return;
+    }
+    const docxName = pdfToDocxState.lastConvertedResult.docxFilename;
+    downloadDocument(docxName);
+}
+
+function viewConvertedInWorkspace() {
+    closePdfToDocxModal();
+    openDocxSection();
+}
+
+function convertCurrentPreviewToDocx() {
+    if (!previewModalState.filename) return;
+    const fname = previewModalState.filename;
+    closePreviewModal();
+    openPdfToDocxModal(fname);
+}
+
+// ==========================================================================
+// 🎓 STUDENT HUB & ACADEMIC WORKSPACE CONTROLLER
+// ==========================================================================
+
+const studentHubState = {
+    profile: null,
+    stats: null,
+    courses: [],
+    assignments: [],
+    flashcards: [],
+    currentFcIndex: 0,
+    currentFcTopic: 'all',
+    activeTab: 'assignments',
+    assignmentFilter: 'all',
+    assignmentSearch: ''
+};
+
+async function openStudentHubSection() {
+    closeAllPopovers();
+    switchSection("student-hub");
+    await loadStudentHubData();
+}
+
+async function loadStudentHubData() {
+    try {
+        const resp = await fetch("/api/student/dashboard");
+        const data = await parseJsonResponse(resp);
+        if (data && data.success) {
+            studentHubState.profile = data.profile || {};
+            studentHubState.stats = data.stats || {};
+            studentHubState.courses = data.courses || [];
+            studentHubState.assignments = data.assignments || [];
+            studentHubState.flashcards = data.flashcards || [];
+
+            updateStudentHubMetrics();
+            renderStudentAssignments();
+            renderStudentMaterials();
+            renderFlashcardState();
+            renderGpaCalculator();
+        }
+    } catch (e) {
+        console.error("Error loading student hub data:", e);
+    }
+}
+
+function updateStudentHubMetrics() {
+    const s = studentHubState.stats || {};
+    const p = studentHubState.profile || {};
+
+    const nameEl = document.getElementById("studentHeaderName");
+    const progEl = document.getElementById("studentHeaderProgram");
+    if (nameEl && p.studentName) nameEl.textContent = p.studentName;
+    if (progEl && p.program) progEl.textContent = `${p.program} • ${p.semester || 'Semester IV'}`;
+
+    const asgEl = document.getElementById("metricPendingAsg");
+    const docsEl = document.getElementById("metricStudyDocs");
+    const gpaEl = document.getElementById("metricCurrentGpa");
+    const fcEl = document.getElementById("metricFlashcards");
+
+    if (asgEl) asgEl.textContent = `${s.pendingAssignments || 0} Due`;
+    if (docsEl) docsEl.textContent = `${s.totalStudyDocs || 6} Files`;
+    if (gpaEl) gpaEl.textContent = `${s.currentGpa || '8.75'} SGPA`;
+    if (fcEl) fcEl.textContent = `${studentHubState.flashcards.length} Cards`;
+}
+
+function switchStudentTab(tabId) {
+    studentHubState.activeTab = tabId;
+    const tabs = document.querySelectorAll(".stu-tab-btn");
+    tabs.forEach(t => t.classList.remove("active"));
+    const activeTabBtn = document.getElementById(`stuTab-${tabId}`);
+    if (activeTabBtn) activeTabBtn.classList.add("active");
+
+    const panes = document.querySelectorAll(".stu-pane");
+    panes.forEach(p => p.style.display = "none");
+    const activePane = document.getElementById(`stuPane-${tabId}`);
+    if (activePane) activePane.style.display = "block";
+
+    if (tabId === 'materials') renderStudentMaterials();
+    if (tabId === 'flashcards') renderFlashcardState();
+    if (tabId === 'gpa') renderGpaCalculator();
+}
+
+function filterAssignments(status, btn) {
+    studentHubState.assignmentFilter = status;
+    const pills = document.querySelectorAll("#asgFilterPills .filter-pill");
+    pills.forEach(p => p.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+    renderStudentAssignments();
+}
+
+function handleAssignmentSearch(query) {
+    studentHubState.assignmentSearch = (query || '').toLowerCase().trim();
+    renderStudentAssignments();
+}
+
+function renderStudentAssignments() {
+    const container = document.getElementById("studentAssignmentsList");
+    if (!container) return;
+
+    let list = studentHubState.assignments || [];
+    if (studentHubState.assignmentFilter !== 'all') {
+        list = list.filter(a => a.status === studentHubState.assignmentFilter);
+    }
+    if (studentHubState.assignmentSearch) {
+        list = list.filter(a => 
+            (a.title || '').toLowerCase().includes(studentHubState.assignmentSearch) ||
+            (a.course || '').toLowerCase().includes(studentHubState.assignmentSearch)
+        );
+    }
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div class="stu-empty-box">
+                <i class="fas fa-clipboard-check"></i>
+                <h4>No assignments found</h4>
+                <p>You're all caught up or no items match your search filter.</p>
+                <button type="button" class="stu-action-btn btn-stu-primary" onclick="openNewAssignmentModal()">
+                    <i class="fas fa-plus"></i> Create New Assignment
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = list.map(asg => {
+        const isComplete = asg.status === 'Completed' || asg.status === 'Submitted';
+        const statusClass = asg.status === 'Completed' ? 'status-complete' : (asg.status === 'Submitted' ? 'status-submitted' : (asg.status === 'In Progress' ? 'status-progress' : 'status-pending'));
+        const priorityBadge = asg.priority === 'High' ? '<span class="stu-priority-tag priority-high"><i class="fas fa-bolt"></i> High</span>' : '';
+
+        return `
+            <div class="stu-assignment-card ${isComplete ? 'completed-card' : ''}">
+                <div class="asg-card-header">
+                    <span class="asg-course-pill"><i class="fas fa-book"></i> ${escapeHtml(asg.course)}</span>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        ${priorityBadge}
+                        <span class="asg-status-pill ${statusClass}">${escapeHtml(asg.status)}</span>
+                    </div>
+                </div>
+                <h4 class="asg-title">${escapeHtml(asg.title)}</h4>
+                <div class="asg-meta-row">
+                    <span><i class="far fa-calendar-alt"></i> Due: <strong>${asg.dueDate}</strong></span>
+                    <span><i class="fas fa-chart-pie"></i> ${asg.progress || 0}% Done</span>
+                </div>
+                <div class="asg-progress-bar">
+                    <div class="asg-progress-fill" style="width: ${asg.progress || 0}%;"></div>
+                </div>
+                <div class="asg-card-footer">
+                    ${asg.docFilename ? `
+                        <button type="button" class="btn-asg-action btn-asg-edit" onclick="openDocxWordEditor('${asg.docFilename.replace(/'/g, "\\'")}')" title="Open in Word Editor">
+                            <i class="fas fa-file-word"></i> Open Word Draft
+                        </button>
+                    ` : `
+                        <button type="button" class="btn-asg-action btn-asg-primary" onclick="createWordAssignmentForTask('${asg.id}', '${asg.title.replace(/'/g, "\\'")}', '${asg.course.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-file-word"></i> Draft in Word
+                        </button>
+                    `}
+                    <button type="button" class="btn-asg-action btn-asg-status" onclick="toggleAssignmentStatus('${asg.id}')" title="Cycle status">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn-asg-action btn-asg-delete" onclick="deleteStudentAssignment('${asg.id}')" title="Delete">
+                        <i class="far fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderStudentMaterials() {
+    const grid = document.getElementById("studentMaterialsGrid");
+    if (!grid) return;
+
+    const allFiles = window.currentDashboardFiles || [];
+    const academicFiles = allFiles.filter(f => {
+        const name = (f.name || '').toLowerCase();
+        return name.includes('question') || name.includes('bank') || name.includes('programming') || 
+               name.includes('sem') || name.includes('bca') || name.includes('dsc') || 
+               name.includes('test') || name.includes('dgf') || name.includes('assignment') || 
+               name.endsWith('.pdf') || name.endsWith('.docx');
+    });
+
+    if (academicFiles.length === 0) {
+        grid.innerHTML = `
+            <div class="stu-empty-box" style="grid-column: 1 / -1;">
+                <i class="fas fa-book-open"></i>
+                <h4>No Study Documents Found</h4>
+                <p>Upload your textbook PDFs, syllabus, or lecture notes to view them here.</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = academicFiles.map(file => {
+        const clean = (file.name || '').replace(/^\d{10,14}-/, '');
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        const ext = file.name.split('.').pop().toUpperCase();
+
+        return `
+            <div class="stu-material-card">
+                <div class="mat-icon-wrap ${isPdf ? 'mat-pdf' : 'mat-docx'}">
+                    <i class="${isPdf ? 'fas fa-file-pdf' : 'fas fa-file-word'}"></i>
+                </div>
+                <div class="mat-info">
+                    <h5 class="mat-title" title="${escapeHtml(file.name)}">${escapeHtml(clean)}</h5>
+                    <div class="mat-meta">
+                        <span>${ext} • ${formatFileSize(file.size || 0)}</span>
+                        ${file.pages ? `<span>${file.pages} pages</span>` : ''}
+                    </div>
+                </div>
+                <div class="mat-actions">
+                    <button type="button" class="mat-btn mat-btn-view" onclick="showPreview('${file.name.replace(/'/g, "\\'")}')" title="Quick Preview">
+                        <i class="far fa-eye"></i> View
+                    </button>
+                    ${isPdf ? `
+                        <button type="button" class="mat-btn mat-btn-convert" onclick="openPdfToDocxModal('${file.name.replace(/'/g, "\\'")}')" title="Convert to Word">
+                            <i class="fas fa-file-word"></i> Convert to DOCX
+                        </button>
+                    ` : `
+                        <button type="button" class="mat-btn mat-btn-edit" onclick="openDocxWordEditor('${file.name.replace(/'/g, "\\'")}')" title="Edit in Word">
+                            <i class="fas fa-edit"></i> Edit DOCX
+                        </button>
+                    `}
+                    <button type="button" class="mat-btn mat-btn-dl" onclick="downloadDocument('${file.name.replace(/'/g, "\\'")}')" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+// Flashcards Controller
+function renderFlashcardState() {
+    const list = getFilteredFlashcards();
+    const countEl = document.getElementById("fcCounter");
+    const qEl = document.getElementById("fcQuestionText");
+    const aEl = document.getElementById("fcAnswerText");
+    const cardEl = document.getElementById("activeFlashcard");
+    const topicEl = document.getElementById("currentFcTopic");
+
+    if (cardEl) cardEl.classList.remove("flipped");
+
+    if (list.length === 0) {
+        if (qEl) qEl.innerHTML = "No flashcards found for this topic.";
+        if (aEl) aEl.innerHTML = "Click 'Add Card' above to create study questions.";
+        if (countEl) countEl.textContent = "0 of 0";
+        return;
+    }
+
+    if (studentHubState.currentFcIndex >= list.length) {
+        studentHubState.currentFcIndex = 0;
+    }
+    if (studentHubState.currentFcIndex < 0) {
+        studentHubState.currentFcIndex = list.length - 1;
+    }
+
+    const current = list[studentHubState.currentFcIndex];
+    if (qEl) qEl.textContent = current.question;
+    if (aEl) aEl.innerHTML = current.answer.replace(/\n/g, "<br>");
+    if (countEl) countEl.textContent = `${studentHubState.currentFcIndex + 1} of ${list.length}`;
+    if (topicEl) topicEl.textContent = `Topic: ${current.topic || 'General'}`;
+}
+
+function getFilteredFlashcards() {
+    const all = studentHubState.flashcards || [];
+    if (studentHubState.currentFcTopic === 'all') return all;
+    return all.filter(f => f.topic === studentHubState.currentFcTopic);
+}
+
+function flipCurrentFlashcard() {
+    const card = document.getElementById("activeFlashcard");
+    if (card) card.classList.toggle("flipped");
+}
+
+function nextFlashcard() {
+    const list = getFilteredFlashcards();
+    if (list.length <= 1) return;
+    studentHubState.currentFcIndex = (studentHubState.currentFcIndex + 1) % list.length;
+    renderFlashcardState();
+}
+
+function prevFlashcard() {
+    const list = getFilteredFlashcards();
+    if (list.length <= 1) return;
+    studentHubState.currentFcIndex = (studentHubState.currentFcIndex - 1 + list.length) % list.length;
+    renderFlashcardState();
+}
+
+function filterFlashcardTopic(topic) {
+    studentHubState.currentFcTopic = topic;
+    studentHubState.currentFcIndex = 0;
+    renderFlashcardState();
+}
+
+// Modals for Student Hub
+function openNewAssignmentModal() {
+    const modal = document.getElementById("new-assignment-modal");
+    if (modal) {
+        modal.style.display = "flex";
+        const dInput = document.getElementById("asgDueDateInput");
+        if (dInput && !dInput.value) {
+            dInput.value = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+        }
+    }
+}
+
+function closeNewAssignmentModal() {
+    const modal = document.getElementById("new-assignment-modal");
+    if (modal) modal.style.display = "none";
+}
+
+async function submitNewAssignment(e) {
+    e.preventDefault();
+    const title = document.getElementById("asgTitleInput").value;
+    const course = document.getElementById("asgCourseSelect").value;
+    const dueDate = document.getElementById("asgDueDateInput").value;
+    const priority = document.getElementById("asgPrioritySelect").value;
+    const createDoc = document.getElementById("asgCreateDocCheckbox").checked;
+
+    try {
+        const resp = await fetch("/api/student/assignments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, course, dueDate, priority })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data.success) {
+            closeNewAssignmentModal();
+            showToast("Assignment added to tracker!", "success");
+
+            if (createDoc && data.assignment) {
+                await createWordAssignmentForTask(data.assignment.id, title, course);
+            } else {
+                await loadStudentHubData();
+            }
+        }
+    } catch (err) {
+        showToast(`Failed to add assignment: ${err.message}`, "error");
+    }
+}
+
+async function createWordAssignmentForTask(asgId, title, course) {
+    showToast("Generating academic Word (.docx) draft...", "info");
+    try {
+        const resp = await fetch("/api/student/create-assignment-doc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: title,
+                course: course,
+                studentName: studentHubState.profile?.studentName || "Nagesh Kotari",
+                rollNumber: studentHubState.profile?.rollNumber || "BCA-2024-042",
+                assignmentId: asgId
+            })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data.success) {
+            showToast(`Assignment draft created: ${cleanDocxName(data.filename)}`, "success");
+            await loadStudentHubData();
+            setTimeout(() => {
+                openDocxWordEditor(data.filename);
+            }, 300);
+        }
+    } catch (err) {
+        showToast("Error creating assignment draft", "error");
+    }
+}
+
+async function createDirectAcademicTemplate() {
+    const title = prompt("Enter Assignment or Report Title:", "Distributed Database Systems Case Study");
+    if (!title) return;
+    const course = prompt("Enter Course / Subject Name:", "DSC15 - Database Management Systems");
+    if (!course) return;
+    await createWordAssignmentForTask(null, title, course);
+}
+
+async function toggleAssignmentStatus(asgId) {
+    const asg = (studentHubState.assignments || []).find(a => a.id === asgId);
+    if (!asg) return;
+
+    const statuses = ['Pending', 'In Progress', 'Submitted', 'Completed'];
+    const currentIdx = statuses.indexOf(asg.status);
+    const nextStatus = statuses[(currentIdx + 1) % statuses.length];
+    const progress = nextStatus === 'Completed' ? 100 : (nextStatus === 'Submitted' ? 90 : (nextStatus === 'In Progress' ? 50 : 10));
+
+    try {
+        const resp = await fetch(`/api/student/assignments/${asgId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: nextStatus, progress: progress })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data.success) {
+            showToast(`Status updated to ${nextStatus}`, "info");
+            await loadStudentHubData();
+        }
+    } catch (e) {
+        showToast("Failed to update status", "error");
+    }
+}
+
+async function deleteStudentAssignment(asgId) {
+    if (!confirm("Are you sure you want to delete this assignment?")) return;
+    try {
+        const resp = await fetch(`/api/student/assignments/${asgId}`, { method: "DELETE" });
+        const data = await parseJsonResponse(resp);
+        if (data.success) {
+            showToast("Assignment removed.", "info");
+            await loadStudentHubData();
+        }
+    } catch (e) {
+        showToast("Failed to delete", "error");
+    }
+}
+
+function openNewFlashcardModal() {
+    const modal = document.getElementById("new-flashcard-modal");
+    if (modal) modal.style.display = "flex";
+}
+
+function closeNewFlashcardModal() {
+    const modal = document.getElementById("new-flashcard-modal");
+    if (modal) modal.style.display = "none";
+}
+
+async function submitNewFlashcard(e) {
+    e.preventDefault();
+    const topic = document.getElementById("fcTopicSelect").value;
+    const question = document.getElementById("fcQuestionInput").value;
+    const answer = document.getElementById("fcAnswerInput").value;
+
+    try {
+        const resp = await fetch("/api/student/flashcards", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic, question, answer })
+        });
+        const data = await parseJsonResponse(resp);
+        if (data.success) {
+            closeNewFlashcardModal();
+            showToast("Flashcard added to deck!", "success");
+            await loadStudentHubData();
+        }
+    } catch (err) {
+        showToast(`Error: ${err.message}`, "error");
+    }
+}
+
+// GPA Calculator Logic
+function renderGpaCalculator() {
+    const tbody = document.getElementById("gpaTableBody");
+    if (!tbody) return;
+
+    const courses = studentHubState.courses || [];
+    tbody.innerHTML = courses.map((c) => `
+        <tr class="gpa-row">
+            <td>
+                <input type="text" class="custom-input gpa-course-name" value="${escapeHtml(c.code ? `${c.code} - ${c.name}` : c.name)}" oninput="calculateLiveGpa()">
+            </td>
+            <td>
+                <input type="number" class="custom-input gpa-course-credits" value="${c.credits || 3}" min="1" max="10" oninput="calculateLiveGpa()">
+            </td>
+            <td>
+                <select class="custom-select gpa-course-grade" onchange="calculateLiveGpa()">
+                    <option value="10.0" ${c.gradePoints >= 9.8 ? 'selected' : ''}>O (10.0) Outstanding</option>
+                    <option value="9.0" ${c.gradePoints >= 8.8 && c.gradePoints < 9.8 ? 'selected' : ''}>A+ (9.0) Excellent</option>
+                    <option value="8.0" ${c.gradePoints >= 7.8 && c.gradePoints < 8.8 ? 'selected' : ''}>A (8.0) Very Good</option>
+                    <option value="7.0" ${c.gradePoints >= 6.8 && c.gradePoints < 7.8 ? 'selected' : ''}>B+ (7.0) Good</option>
+                    <option value="6.0" ${c.gradePoints >= 5.8 && c.gradePoints < 6.8 ? 'selected' : ''}>B (6.0) Above Avg</option>
+                    <option value="5.0" ${c.gradePoints >= 4.8 && c.gradePoints < 5.8 ? 'selected' : ''}>C (5.0) Pass</option>
+                </select>
+            </td>
+            <td>
+                <button type="button" class="btn-remove-gpa-row" onclick="removeGpaRow(this)" title="Remove Course">&times;</button>
+            </td>
+        </tr>
+    `).join("");
+
+    calculateLiveGpa();
+}
+
+function addGpaCourseRow() {
+    const tbody = document.getElementById("gpaTableBody");
+    if (!tbody) return;
+    const tr = document.createElement("tr");
+    tr.className = "gpa-row";
+    tr.innerHTML = `
+        <td><input type="text" class="custom-input gpa-course-name" value="Elective Course" oninput="calculateLiveGpa()"></td>
+        <td><input type="number" class="custom-input gpa-course-credits" value="3" min="1" max="10" oninput="calculateLiveGpa()"></td>
+        <td>
+            <select class="custom-select gpa-course-grade" onchange="calculateLiveGpa()">
+                <option value="10.0">O (10.0) Outstanding</option>
+                <option value="9.0" selected>A+ (9.0) Excellent</option>
+                <option value="8.0">A (8.0) Very Good</option>
+                <option value="7.0">B+ (7.0) Good</option>
+                <option value="6.0">B (6.0) Above Avg</option>
+            </select>
+        </td>
+        <td><button type="button" class="btn-remove-gpa-row" onclick="removeGpaRow(this)">&times;</button></td>
+    `;
+    tbody.appendChild(tr);
+    calculateLiveGpa();
+}
+
+function removeGpaRow(btn) {
+    const tr = btn.closest("tr");
+    if (tr) tr.remove();
+    calculateLiveGpa();
+}
+
+function calculateLiveGpa() {
+    const rows = document.querySelectorAll(".gpa-row");
+    let totalCredits = 0;
+    let totalPoints = 0;
+
+    rows.forEach(r => {
+        const cred = Number(r.querySelector(".gpa-course-credits")?.value) || 0;
+        const pts = Number(r.querySelector(".gpa-course-grade")?.value) || 0;
+        totalCredits += cred;
+        totalPoints += cred * pts;
+    });
+
+    const sgpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+    const scoreEl = document.getElementById("calculatedGpaScore");
+    const credEl = document.getElementById("gpaTotalCredits");
+    const ptsEl = document.getElementById("gpaTotalPoints");
+    const standingEl = document.getElementById("gpaStandingText");
+
+    if (scoreEl) scoreEl.textContent = sgpa;
+    if (credEl) credEl.textContent = totalCredits;
+    if (ptsEl) ptsEl.textContent = totalPoints.toFixed(1);
+
+    if (standingEl) {
+        const numSgpa = Number(sgpa);
+        if (numSgpa >= 9.0) standingEl.textContent = "🏆 Outstanding • First Class with Distinction";
+        else if (numSgpa >= 8.0) standingEl.textContent = "⭐ Distinction • Top 10%";
+        else if (numSgpa >= 7.0) standingEl.textContent = "✅ First Class";
+        else standingEl.textContent = "Pass Grade";
+    }
+}
+
+async function recalculateAndSaveGpa() {
+    calculateLiveGpa();
+    const sgpa = document.getElementById("calculatedGpaScore")?.textContent || "8.75";
+    showToast(`Updated Academic Record. Current SGPA: ${sgpa}`, "success");
+}
+
+function triggerAiTutorAction(actionType) {
+    openAiAssistantModal();
+    const input = document.getElementById("aiChatInput");
+    if (!input) return;
+
+    if (actionType === 'summarize_question_bank') {
+        input.value = "Please analyze the NEP-2020 Question Bank (DSC13 Algorithms & DSC14 R Programming) and extract the top 10 most frequent high-priority exam questions and key formulas.";
+    } else if (actionType === 'generate_quiz') {
+        input.value = "Create a 5-question multiple choice practice exam quiz on Divide & Conquer and Dynamic Programming algorithms with detailed answer keys.";
+    } else if (actionType === 'feynman_explain') {
+        input.value = "Explain the time complexity of QuickSort vs MergeSort and Dynamic Programming Principle of Optimality simply like I'm a 10-year old.";
+    } else if (actionType === 'assignment_outline') {
+        input.value = "Create a structured academic assignment outline for 'Data Visualization & Regression Analysis in R' with methodology, test cases, and references.";
+    }
+}
+
+// ========================================================
+// MongoDB Compass & Database Studio Client Controller
+// ========================================================
+
+let currentMongoCollection = "documents";
+
+async function initMongoCompassStatus() {
+    try {
+        const res = await fetch("/api/db/status");
+        const data = await res.json();
+        const chipLabel = document.getElementById("mongoStatusChipLabel");
+        const dot = document.getElementById("mongoStatusDot");
+        const badge = document.getElementById("mongoModalStatusBadge");
+
+        if (data.connected) {
+            if (chipLabel) chipLabel.textContent = "MongoDB: 27017";
+            if (dot) {
+                dot.className = "mongo-status-dot";
+                dot.title = "Connected to MongoDB at " + data.connectionUri;
+            }
+            if (badge) {
+                badge.textContent = "● CONNECTED (27017)";
+                badge.style.color = "#34d399";
+                badge.style.background = "rgba(16, 185, 129, 0.15)";
+                badge.style.borderColor = "rgba(16, 185, 129, 0.35)";
+            }
+        } else {
+            if (chipLabel) chipLabel.textContent = "MongoDB: Standby";
+            if (dot) {
+                dot.className = "mongo-status-dot standby";
+                dot.title = "MongoDB in standby / local fallback";
+            }
+            if (badge) {
+                badge.textContent = "● STANDBY / LOCAL";
+                badge.style.color = "#fbbf24";
+                badge.style.background = "rgba(245, 158, 11, 0.15)";
+                badge.style.borderColor = "rgba(245, 158, 11, 0.35)";
+            }
+        }
+    } catch (_) {}
+}
+
+function openMongoCompassModal() {
+    const modal = document.getElementById("ncMongoCompassModal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    refreshMongoCompassData();
+    switchMongoTab("connect");
+}
+
+function closeMongoCompassModal() {
+    const modal = document.getElementById("ncMongoCompassModal");
+    if (modal) modal.style.display = "none";
+}
+
+function switchMongoTab(tabKey) {
+    const tabs = ["connect", "explorer", "queries"];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`mongoTabBtn-${t}`);
+        const pane = document.getElementById(`mongoTab-${t}`);
+        if (btn) btn.classList.toggle("active", t === tabKey);
+        if (pane) pane.style.display = (t === tabKey) ? "block" : "none";
+    });
+
+    if (tabKey === "explorer") {
+        selectMongoCollection(currentMongoCollection);
+    }
+}
+
+async function refreshMongoCompassData() {
+    try {
+        const res = await fetch("/api/db/status");
+        const status = await res.json();
+        
+        const uriDisp = document.getElementById("mongoCompassUriDisplay");
+        if (uriDisp) uriDisp.textContent = status.compassUri || "mongodb://127.0.0.1:27017/";
+
+        const statCols = document.getElementById("statMongoCols");
+        const statDocs = document.getElementById("statMongoDocs");
+        const statIndexes = document.getElementById("statMongoIndexes");
+        const statOps = document.getElementById("statMongoOps");
+
+        if (status.collections && Array.isArray(status.collections)) {
+            if (statCols) statCols.textContent = status.collections.length;
+            let totalDocs = 0;
+            status.collections.forEach(c => {
+                totalDocs += (c.count || 0);
+                const badge = document.getElementById(`cntCol-${c.name}`);
+                if (badge) badge.textContent = c.count || 0;
+            });
+            if (statDocs) statDocs.textContent = totalDocs;
+        }
+
+        if (status.dbStats && status.dbStats.indexes) {
+            if (statIndexes) statIndexes.textContent = status.dbStats.indexes;
+        }
+
+        if (statOps) statOps.textContent = status.operationsCount || 0;
+        initMongoCompassStatus();
+    } catch (e) {
+        console.warn("Failed to refresh MongoDB status:", e);
+    }
+}
+
+function copyMongoCompassUri() {
+    const uri = "mongodb://127.0.0.1:27017/";
+    navigator.clipboard.writeText(uri).then(() => {
+        showToast("Copied 'mongodb://127.0.0.1:27017/' to clipboard for Compass!", "success");
+    }).catch(() => {
+        prompt("Copy MongoDB Compass URI:", uri);
+    });
+}
+
+async function triggerMongoSync() {
+    const btn = document.getElementById("btnMongoSyncNow");
+    const icon = document.getElementById("iconMongoSync");
+    if (btn) btn.disabled = true;
+    if (icon) icon.className = "fas fa-sync-alt fa-spin";
+
+    showToast("Synchronizing documents and metadata to MongoDB...", "info");
+
+    try {
+        const res = await fetch("/api/db/sync", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+            const r = data.report || {};
+            showToast(`MongoDB Synchronized: ${r.documents || 0} documents, ${r.tags || 0} tags, ${r.versions || 0} versions!`, "success");
+            await refreshMongoCompassData();
+            if (currentMongoCollection) selectMongoCollection(currentMongoCollection);
+        } else {
+            showToast("Sync error: " + (data.message || "Failed"), "error");
+        }
+    } catch (err) {
+        showToast("Sync request failed: " + err.message, "error");
+    } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.className = "fas fa-sync-alt";
+    }
+}
+
+function downloadCompassDump() {
+    showToast("Preparing MongoDB Compass JSON dump...", "info");
+    window.location.href = "/api/db/compass/export-all";
+}
+
+function downloadCurrentCollectionJson() {
+    showToast(`Downloading collection '${currentMongoCollection}' for Compass...`, "info");
+    window.location.href = `/api/db/compass/export/${encodeURIComponent(currentMongoCollection)}`;
+}
+
+function toggleCustomUriSection() {
+    const box = document.getElementById("mongoCustomUriBox");
+    if (box) box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+}
+
+async function connectCustomMongoUri() {
+    const input = document.getElementById("inputCustomMongoUri");
+    if (!input || !input.value.trim()) {
+        showToast("Please enter a MongoDB connection URI", "error");
+        return;
+    }
+    const uri = input.value.trim();
+    showToast("Connecting to MongoDB URI...", "info");
+
+    try {
+        const res = await fetch("/api/db/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uri })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`Connected successfully to ${uri}!`, "success");
+            await refreshMongoCompassData();
+            toggleCustomUriSection();
+        } else {
+            showToast("Connection failed: " + data.message, "error");
+        }
+    } catch (err) {
+        showToast("Connection request error: " + err.message, "error");
+    }
+}
+
+async function selectMongoCollection(colName) {
+    currentMongoCollection = colName;
+    const label = document.getElementById("currentColNameLabel");
+    if (label) label.textContent = colName;
+
+    const allButtons = document.querySelectorAll("[id^='btnCol-']");
+    allButtons.forEach(b => b.classList.remove("active"));
+    const activeBtn = document.getElementById(`btnCol-${colName}`);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    const filterInput = document.getElementById("inputMongoQueryFilter");
+    const filter = filterInput && filterInput.value.trim() ? filterInput.value.trim() : "";
+
+    await fetchAndRenderMongoDocs(colName, filter);
+}
+
+async function fetchAndRenderMongoDocs(colName, filter = "") {
+    const container = document.getElementById("mongoDocsContainer");
+    if (!container) return;
+    container.innerHTML = `<div style="text-align: center; color: #64748b; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> Querying ${colName}...</div>`;
+
+    try {
+        let url = `/api/db/collection/${encodeURIComponent(colName)}?limit=50`;
+        if (filter) url += `&filter=${encodeURIComponent(filter)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const countBadge = document.getElementById("queryResultCount");
+        if (countBadge) countBadge.textContent = data.total || (data.documents ? data.documents.length : 0);
+
+        if (!data.documents || data.documents.length === 0) {
+            container.innerHTML = `<div style="text-align: center; color: #71717a; padding: 40px; background: #141720; border-radius: 8px;">
+                <i class="fas fa-folder-open" style="font-size: 28px; margin-bottom: 8px; opacity: 0.5;"></i>
+                <p style="margin: 0; font-size: 13px;">No documents found in collection <strong>${colName}</strong> matching filter.</p>
+            </div>`;
+            return;
+        }
+
+        let html = "";
+        data.documents.forEach((doc, idx) => {
+            const idVal = doc._id || `doc-${idx}`;
+            const jsonStr = JSON.stringify(doc, null, 2);
+            const title = doc.name || doc.filename || doc.action || doc.id || `Document #${idx + 1}`;
+
+            html += `
+            <div class="mongo-doc-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11px; background: #27272a; color: #34d399; padding: 2px 6px; border-radius: 4px; font-family: monospace;">_id: ${idVal}</span>
+                        <strong style="font-size: 13px; color: #f4f4f5;">${escapeHtml(title)}</strong>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="mongo-btn-copy" style="padding: 3px 8px; font-size: 11px;" onclick="copyDocJson(${idx})"><i class="far fa-copy"></i> Copy JSON</button>
+                        <button class="mongo-btn-copy" style="padding: 3px 8px; font-size: 11px; color: #f87171;" onclick="deleteMongoDocItem('${colName}', '${idVal}')"><i class="far fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                <pre class="mongo-json-view" id="json-doc-${idx}">${escapeHtml(jsonStr)}</pre>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">Error loading collection: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+function runMongoQuery() {
+    selectMongoCollection(currentMongoCollection);
+}
+
+function resetMongoQuery() {
+    const input = document.getElementById("inputMongoQueryFilter");
+    if (input) input.value = "";
+    selectMongoCollection(currentMongoCollection);
+}
+
+function copyDocJson(idx) {
+    const el = document.getElementById(`json-doc-${idx}`);
+    if (el) {
+        navigator.clipboard.writeText(el.textContent).then(() => {
+            showToast("Document JSON copied to clipboard!", "success");
+        });
+    }
+}
+
+async function deleteMongoDocItem(colName, id) {
+    if (!confirm(`Are you sure you want to delete this document from '${colName}'?`)) return;
+    try {
+        const res = await fetch(`/api/db/collection/${encodeURIComponent(colName)}/${encodeURIComponent(id)}`, {
+            method: "DELETE"
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast("Document deleted from MongoDB", "success");
+            selectMongoCollection(colName);
+            refreshMongoCompassData();
+        } else {
+            showToast("Delete failed: " + data.message, "error");
+        }
+    } catch (err) {
+        showToast("Delete request failed: " + err.message, "error");
+    }
+}
+
+async function openInsertMongoDocModal() {
+    const sample = currentMongoCollection === "documents"
+        ? '{\n  "name": "Custom_File.pdf",\n  "type": "pdf",\n  "tags": ["Important"],\n  "size": 1024\n}'
+        : '{\n  "customField": "value",\n  "createdAt": "' + new Date().toISOString() + '"\n}';
+    
+    const input = prompt(`Insert new document into '${currentMongoCollection}' (JSON):`, sample);
+    if (!input || !input.trim()) return;
+
+    try {
+        const parsed = JSON.parse(input);
+        const res = await fetch(`/api/db/collection/${encodeURIComponent(currentMongoCollection)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parsed)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast("Document inserted into MongoDB collection!", "success");
+            selectMongoCollection(currentMongoCollection);
+            refreshMongoCompassData();
+        } else {
+            showToast("Insert failed: " + data.message, "error");
+        }
+    } catch (err) {
+        showToast("Invalid JSON syntax: " + err.message, "error");
+    }
+}
+
+function copySnippet(snippet) {
+    navigator.clipboard.writeText(snippet).then(() => {
+        showToast("Copied to clipboard!", "success");
+    }).catch(() => {
+        prompt("Copy snippet:", snippet);
+    });
+}
+
 window.onload = () => {
     // Initialize greeting
     updateGreetingHeader();
@@ -7144,4 +9338,7 @@ window.onload = () => {
     loadProtectedPDFs();
     selectFolder("Books");
     switchSection("dashboard");
+
+    // Initialize MongoDB Compass status check
+    initMongoCompassStatus();
 };
