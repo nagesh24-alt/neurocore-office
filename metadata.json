@@ -1,0 +1,8 @@
+{
+  "name": "NeuroCore Office",
+  "description": "Office and document suite featuring an MS Word-style DOCX editor with ribbon toolbar, OpenXML processing, and a Python 3 automation engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

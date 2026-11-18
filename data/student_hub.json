@@ -1,0 +1,136 @@
+{
+  "profile": {
+    "studentName": "Nagesh Kotari",
+    "rollNumber": "BCA-2024-042",
+    "program": "Bachelor of Computer Applications (BCA)",
+    "semester": "Semester IV",
+    "targetGpa": 9.2,
+    "currentGpa": 8.75
+  },
+  "courses": [
+    {
+      "code": "DSC13",
+      "name": "Design & Analysis of Algorithms",
+      "instructor": "Prof. Sharma",
+      "credits": 4,
+      "grade": "A+",
+      "gradePoints": 9.0,
+      "color": "#3b82f6",
+      "materialsCount": 4
+    },
+    {
+      "code": "DSC14",
+      "name": "Statistical Computing and R",
+      "instructor": "Dr. V. Rao",
+      "credits": 4,
+      "grade": "A",
+      "gradePoints": 8.5,
+      "color": "#8b5cf6",
+      "materialsCount": 3
+    },
+    {
+      "code": "SEC02",
+      "name": "Full Stack Web Development",
+      "instructor": "Prof. K. Nair",
+      "credits": 3,
+      "grade": "A+",
+      "gradePoints": 9.5,
+      "color": "#10b981",
+      "materialsCount": 5
+    },
+    {
+      "code": "DSC15",
+      "name": "Database Management Systems",
+      "instructor": "Dr. Ananya S.",
+      "credits": 4,
+      "grade": "A",
+      "gradePoints": 8.0,
+      "color": "#f59e0b",
+      "materialsCount": 6
+    },
+    {
+      "code": "AEC04",
+      "name": "Technical Communication & Ethics",
+      "instructor": "Prof. Lisa M.",
+      "credits": 2,
+      "grade": "O",
+      "gradePoints": 10.0,
+      "color": "#ec4899",
+      "materialsCount": 2
+    }
+  ],
+  "assignments": [
+    {
+      "id": "asg-1",
+      "title": "Divide & Conquer vs Dynamic Programming Case Study",
+      "course": "DSC13 - Design & Analysis of Algorithms",
+      "dueDate": "2026-10-05",
+      "status": "In Progress",
+      "priority": "High",
+      "docFilename": null,
+      "progress": 60
+    },
+    {
+      "id": "asg-2",
+      "title": "Data Visualization & Regression in R",
+      "course": "DSC14 - Statistical Computing and R",
+      "dueDate": "2026-10-10",
+      "status": "Pending",
+      "priority": "Medium",
+      "docFilename": null,
+      "progress": 20
+    },
+    {
+      "id": "asg-3",
+      "title": "Relational Schema Normalization (3NF & BCNF)",
+      "course": "DSC15 - Database Management Systems",
+      "dueDate": "2026-09-30",
+      "status": "Submitted",
+      "priority": "High",
+      "docFilename": null,
+      "progress": 100
+    },
+    {
+      "id": "asg-4",
+      "title": "REST API Architecture & JWT Implementation",
+      "course": "SEC02 - Full Stack Web Development",
+      "dueDate": "2026-10-15",
+      "status": "In Progress",
+      "priority": "Medium",
+      "docFilename": null,
+      "progress": 45
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "fc-1",
+      "topic": "Algorithms",
+      "question": "What is the time complexity of QuickSort in the Average and Worst cases?",
+      "answer": "Average Case: O(n log n)\nWorst Case: O(n²) (when pivot selection is always the maximum or minimum element in an already sorted array)."
+    },
+    {
+      "id": "fc-2",
+      "topic": "Algorithms",
+      "question": "State the Principle of Optimality in Dynamic Programming.",
+      "answer": "An optimal solution to any instance of an optimization problem is composed of optimal solutions to its sub-problems."
+    },
+    {
+      "id": "fc-3",
+      "topic": "R Programming",
+      "question": "What is the difference between a Vector, a Matrix, and a Data Frame in R?",
+      "answer": "• Vector: 1D homogeneous elements\n• Matrix: 2D homogeneous elements\n• Data Frame: 2D heterogeneous elements (columns can have different data types)."
+    },
+    {
+      "id": "fc-4",
+      "topic": "DBMS",
+      "question": "What are ACID Properties in database transactions?",
+      "answer": "• Atomicity: All or nothing\n• Consistency: Valid state before and after\n• Isolation: Concurrent transactions don't interfere\n• Durability: Committed changes survive crashes."
+    },
+    {
+      "id": "fc-5",
+      "topic": "Web Dev",
+      "question": "What is CORS (Cross-Origin Resource Sharing)?",
+      "answer": "An HTTP-header based security mechanism that allows a server to indicate any origins other than its own from which a browser should permit loading resources."
+    }
+  ]
+}

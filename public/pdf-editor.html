@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer &amp; Editor — NeuroCore Office</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+        }
+    </script>
+    
+    <!-- PDF-Lib for In-Browser PDF Editing, Annotating & Permanent Baking -->
+    <script src="/vendor/pdf-lib.min.js"></script>
+    <script>
+        if (!window.PDFLib) {
+            const s = document.createElement("script");
+            s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+            document.head.appendChild(s);
+        }
+    </script>
+    
+    <!-- Workspace Stylesheet -->
+    <link rel="stylesheet" href="pdf-editor.css">
+</head>
+<body>
+    <div class="pdf-app-root">
+        
+        <!-- ========================================================================== -->
+        <!-- 1. TOP GLOBAL APPLICATION BAR                                              -->
+        <!-- ========================================================================== -->
+        <header class="nc-topbar">
+            <div class="nc-topbar-left">
+                <a href="/" class="nc-logo-mark" title="NeuroCore Office">
+                    <span>N</span>
+                </a>
+                <div class="nc-brand-text-group">
+                    <span class="nc-brand-title">NeuroCore Office</span>
+                    <span class="nc-brand-subtitle">Smarter Documents. Greater Possibilities.</span>
+                </div>
+            </div>
+
+            <div class="nc-topbar-center">
+                <div class="nc-search-pill">
+                    <i class="fas fa-search nc-search-icon"></i>
+                    <input type="text" id="pdfGlobalSearchInput" class="nc-search-input" placeholder="Search in PDF..." autocomplete="off">
+                    <span class="nc-search-kbd">Ctrl + K</span>
+                </div>
+            </div>
+
+            <div class="nc-topbar-right">
+                <button type="button" class="nc-ai-assist-btn" onclick="openRightPanelTab('ai')">
+                    <i class="fas fa-sparkles"></i> <span>AI Assistant</span>
+                </button>
+                <button type="button" class="nc-top-icon-btn" title="Notifications">
+                    <i class="far fa-bell"></i>
+                </button>
+                <button type="button" class="nc-top-icon-btn" onclick="openShortcutsModal()" title="Settings &amp; Shortcuts">
+                    <i class="fas fa-gear"></i>
+                </button>
+                <div class="nc-user-profile-widget" title="Active Account">
+                    <div class="nc-user-avatar-circle">N</div>
+                    <div class="nc-user-meta-text">
+                        <span class="nc-user-name">Neuro User</span>
+                        <span class="nc-user-plan">Premium Plan</span>
+                    </div>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: var(--text-muted); margin-left: 2px;"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- ========================================================================== -->
+        <!-- 2. TWO-TIER WORKSPACE WRAPPER                                              -->
+        <!-- ========================================================================== -->
+        <div class="nc-workspace-root">
+
+            <!-- ====================================================================== -->
+            <!-- 2.1 LEFT PERMANENT NAVIGATION DRAWER (Full Height)                     -->
+            <!-- ====================================================================== -->
+            <aside class="nc-left-nav-drawer">
+                <a href="/" class="nc-back-btn">
+                    <i class="fas fa-arrow-left"></i> <span>Back to Documents</span>
+                </a>
+
+                <div class="nc-nav-menu-list">
+                    <button type="button" class="nc-nav-item active" onclick="switchNavSection('viewer')">
+                        <i class="fas fa-file-pdf"></i> <span>PDF Viewer &amp; Editor</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('info')">
+                        <i class="fas fa-circle-info"></i> <span>Document Info</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="togglePagesPanel()">
+                        <i class="fas fa-layer-group"></i> <span>Pages</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('bookmarks')">
+                        <i class="fas fa-bookmark"></i> <span>Bookmarks</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('annotations')">
+                        <i class="fas fa-comments"></i> <span>Annotations</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('forms')">
+                        <i class="fas fa-signature"></i> <span>Form Fill &amp; Sign</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('organize')">
+                        <i class="fas fa-table-cells"></i> <span>Organize Pages</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('compare')">
+                        <i class="fas fa-code-compare"></i> <span>Compare PDF</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('export')">
+                        <i class="fas fa-arrow-right-arrow-left"></i> <span>Export / Convert</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="switchNavSection('security')">
+                        <i class="fas fa-shield-halved"></i> <span>Security</span>
+                    </button>
+                    <button type="button" class="nc-nav-item" onclick="openRightPanelTab('ai')">
+                        <i class="fas fa-sparkles"></i> <span>AI Tools</span>
+                    </button>
+                </div>
+
+                <div class="nc-sidebar-divider"></div>
+
+                <div class="nc-recent-header">Recent Files</div>
+                <div class="nc-recent-list" id="ncRecentFilesList">
+                    <div class="nc-recent-item active" onclick="switchDocumentFile('Project_Proposal.pdf')">
+                        <i class="fas fa-file-pdf"></i> <span>Project_Proposal.pdf</span>
+                    </div>
+                    <div class="nc-recent-item" onclick="switchDocumentFile('Report_2026.pdf')">
+                        <i class="fas fa-file-pdf"></i> <span>Report_2026.pdf</span>
+                    </div>
+                    <div class="nc-recent-item" onclick="switchDocumentFile('Invoice_May.pdf')">
+                        <i class="fas fa-file-pdf"></i> <span>Invoice_May.pdf</span>
+                    </div>
+                    <div class="nc-recent-item" onclick="switchDocumentFile('Manual.pdf')">
+                        <i class="fas fa-file-pdf"></i> <span>Manual.pdf</span>
+                    </div>
+                    <div class="nc-recent-item" onclick="switchDocumentFile('Design_Doc.pdf')">
+                        <i class="fas fa-file-pdf"></i> <span>Design_Doc.pdf</span>
+                    </div>
+                </div>
+
+                <!-- Storage Widget -->
+                <div class="nc-storage-widget">
+                    <div class="nc-storage-row">
+                        <i class="fas fa-cloud nc-storage-icon"></i>
+                        <span class="nc-storage-title">Storage</span>
+                    </div>
+                    <div class="nc-storage-values">24.36 GB / 100 GB</div>
+                    <div class="nc-storage-bar-bg">
+                        <div class="nc-storage-bar-fill"></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ====================================================================== -->
+            <!-- 2.2 MAIN STAGE AREA (Header + Ribbon + 3 Columns)                      -->
+            <!-- ====================================================================== -->
+            <div class="nc-main-stage-wrapper">
+                
+                <!-- Document Info & Actions Bar -->
+                <div class="nc-doc-header-bar">
+                    <div class="nc-doc-info-block">
+                        <div class="nc-pdf-big-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="nc-doc-title-block">
+                            <span class="nc-doc-title-text" id="ncDocTitleText">Project_Proposal_2026.pdf</span>
+                            <span class="nc-doc-metadata-text" id="ncDocMetaText">2.4 MB  •  24 pages  •  Last modified: 29 May 2026, 10:30 AM</span>
+                        </div>
+                    </div>
+
+                    <div class="nc-doc-actions-group">
+                        <button type="button" class="nc-btn-open" onclick="openFilePickerModal()">
+                            <i class="fas fa-folder-open"></i> <span>Open</span>
+                        </button>
+                        <button type="button" class="nc-btn-save" onclick="savePdfWorkspace()">
+                            <i class="fas fa-save"></i> <span>Save</span>
+                        </button>
+                        <button type="button" class="nc-btn-save-as" onclick="openSaveAsModal()">
+                            <i class="fas fa-copy"></i> <span>Save As</span>
+                        </button>
+                        <button type="button" class="nc-btn-open" onclick="downloadBakedPdf()" title="Download PDF with baked edits and annotations">
+                            <i class="fas fa-download" style="color: #38bdf8;"></i> <span>Download</span>
+                        </button>
+                        <button type="button" class="nc-btn-share" onclick="shareDocumentLink()">
+                            <i class="fas fa-share-nodes"></i> <span>Share</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ribbon Toolbar Bar -->
+                <div class="nc-ribbon-bar">
+                    <div class="nc-ribbon-tabs-row">
+                        <button type="button" class="nc-r-tab active" data-tab="home" onclick="switchRibbonTab('home')">Home</button>
+                        <button type="button" class="nc-r-tab" data-tab="edit" onclick="switchRibbonTab('edit')">Edit</button>
+                        <button type="button" class="nc-r-tab" data-tab="annotate" onclick="switchRibbonTab('annotate')">Annotate</button>
+                        <button type="button" class="nc-r-tab" data-tab="page" onclick="switchRibbonTab('page')">Page</button>
+                        <button type="button" class="nc-r-tab" data-tab="form" onclick="switchRibbonTab('form')">Form</button>
+                        <button type="button" class="nc-r-tab" data-tab="convert" onclick="switchRibbonTab('convert')">Convert</button>
+                        <button type="button" class="nc-r-tab" data-tab="protect" onclick="switchRibbonTab('protect')">Protect</button>
+                        <button type="button" class="nc-r-tab" data-tab="ai" onclick="openRightPanelTab('ai')">AI Tools</button>
+                    </div>
+
+                    <div class="nc-ribbon-tools-row" id="ncRibbonToolsRow">
+                        <button type="button" class="nc-r-tool active" id="tool-select" onclick="setActiveTool('select')" title="Select & Move (V)">
+                            <i class="fas fa-arrow-pointer"></i>
+                            <span>Select</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-hand" onclick="setActiveTool('hand')" title="Hand / Pan View (H)">
+                            <i class="fas fa-hand"></i>
+                            <span>Hand</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-edit-text" onclick="setActiveTool('edit-text')" title="Edit existing text on document">
+                            <i class="fas fa-pen-to-square" style="color: #38bdf8;"></i>
+                            <span>Edit Text</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-add-text" onclick="setActiveTool('add-text')" title="Add new text box (T)">
+                            <i class="fas fa-font" style="color: #60a5fa;"></i>
+                            <span>Add Text</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-highlight" onclick="setActiveTool('highlight')" title="Highlight text layer (Ctrl+H)">
+                            <i class="fas fa-highlighter" style="color: #fef08a;"></i>
+                            <span>Highlight</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-underline" onclick="setActiveTool('underline')" title="Underline text">
+                            <i class="fas fa-underline" style="color: #fca5a5;"></i>
+                            <span>Underline</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-strikethrough" onclick="setActiveTool('strikethrough')" title="Strikethrough text">
+                            <i class="fas fa-strikethrough" style="color: #fca5a5;"></i>
+                            <span>Strikethrough</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-draw" onclick="setActiveTool('draw')" title="Freehand Pen / Draw (P)">
+                            <i class="fas fa-pencil" style="color: #ef4444;"></i>
+                            <span>Draw</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-eraser" onclick="setActiveTool('eraser')" title="Eraser (E)">
+                            <i class="fas fa-eraser" style="color: #fb923c;"></i>
+                            <span>Eraser</span>
+                        </button>
+                        <div class="nc-tool-dropdown-wrap" style="position: relative; display: inline-block;">
+                            <button type="button" class="nc-r-tool" id="tool-shapes" onclick="toggleShapesDropdown(event)" title="Shapes & Lines">
+                                <i class="fas fa-shapes" style="color: #a78bfa;"></i>
+                                <span>Shapes ▾</span>
+                            </button>
+                            <div class="nc-popup-menu" id="ncShapesDropdownMenu" style="display: none;">
+                                <div class="nc-popup-item" onclick="selectShapeTool('rect')"><i class="far fa-square"></i> Rectangle</div>
+                                <div class="nc-popup-item" onclick="selectShapeTool('circle')"><i class="far fa-circle"></i> Circle / Ellipse</div>
+                                <div class="nc-popup-item" onclick="selectShapeTool('line')"><i class="fas fa-minus"></i> Line</div>
+                                <div class="nc-popup-item" onclick="selectShapeTool('arrow')"><i class="fas fa-arrow-right"></i> Arrow</div>
+                            </div>
+                        </div>
+                        <div class="nc-tool-dropdown-wrap" style="position: relative; display: inline-block;">
+                            <button type="button" class="nc-r-tool" id="tool-stamp" onclick="toggleStampsDropdown(event)" title="Document Stamps">
+                                <i class="fas fa-stamp" style="color: #10b981;"></i>
+                                <span>Stamp ▾</span>
+                            </button>
+                            <div class="nc-popup-menu" id="ncStampsDropdownMenu" style="display: none;">
+                                <div class="nc-popup-item" onclick="selectStampBadge('APPROVED', '#10b981')"><i class="fas fa-check-circle" style="color:#10b981;"></i> APPROVED</div>
+                                <div class="nc-popup-item" onclick="selectStampBadge('CONFIDENTIAL', '#ef4444')"><i class="fas fa-lock" style="color:#ef4444;"></i> CONFIDENTIAL</div>
+                                <div class="nc-popup-item" onclick="selectStampBadge('DRAFT', '#f97316')"><i class="fas fa-file-pen" style="color:#f97316;"></i> DRAFT</div>
+                                <div class="nc-popup-item" onclick="selectStampBadge('REVIEWED', '#3b82f6')"><i class="fas fa-clipboard-check" style="color:#3b82f6;"></i> REVIEWED</div>
+                                <div class="nc-popup-item" onclick="selectStampBadge('FINAL', '#8b5cf6')"><i class="fas fa-certificate" style="color:#8b5cf6;"></i> FINAL</div>
+                                <div class="nc-popup-item" onclick="selectStampBadge('VOID', '#6b7280')"><i class="fas fa-ban" style="color:#6b7280;"></i> VOID</div>
+                            </div>
+                        </div>
+                        <button type="button" class="nc-r-tool" id="tool-comment" onclick="setActiveTool('stickynote')" title="Add Sticky Note / Comment (C)">
+                            <i class="far fa-comment-dots" style="color: #38bdf8;"></i>
+                            <span>Comment</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-sign" onclick="openSignatureModal()" title="Add eSignature">
+                            <i class="fas fa-signature" style="color: #ec4899;"></i>
+                            <span>Sign</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" onclick="rotateDocument(90)" title="Rotate Clockwise">
+                            <i class="fas fa-rotate-right"></i>
+                            <span>Rotate</span>
+                        </button>
+                        <button type="button" class="nc-r-tool" id="tool-add-image" onclick="triggerImageUpload()" title="Insert Image onto page">
+                            <i class="far fa-image" style="color: #34d399;"></i>
+                            <span>Add Image</span>
+                        </button>
+                        <input type="file" id="pdfImageUploadInput" accept="image/*" style="display:none;" onchange="handleImageFileSelected(event)">
+                    </div>
+                </div>
+
+                <!-- ================================================================== -->
+                <!-- 2.3 THREE-COLUMN WORKSPACE BODY                                    -->
+                <!-- ================================================================== -->
+                <div class="nc-content-columns-wrapper">
+                    
+                    <!-- COLUMN 1: PAGES / THUMBNAILS DRAWER -->
+                    <aside class="nc-pages-panel" id="ncPagesPanel">
+                        <div class="nc-pages-header">
+                            <span class="nc-pages-title">Pages</span>
+                            <div class="nc-pages-header-actions">
+                                <button type="button" class="nc-c-btn" title="Grid View"><i class="fas fa-table-cells-large"></i></button>
+                                <button type="button" class="nc-c-btn" onclick="togglePagesPanel()" title="Close Pages"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="nc-pages-scroll-area" id="ncThumbnailsScrollArea">
+                            <div style="color: var(--text-muted); font-size: 11.5px; text-align: center; padding: 20px 0;">
+                                <i class="fas fa-spinner fa-spin"></i> Rendering thumbnails…
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- COLUMN 2: CENTER CANVAS STAGE -->
+                    <main class="nc-center-canvas-panel">
+                        <!-- Top Canvas Floating Control Bar -->
+                        <div class="nc-canvas-top-bar">
+                            <div class="nc-canvas-bar-group">
+                                <button type="button" class="nc-c-btn" id="btnViewSingle" onclick="setViewMode('single')" title="Single Page View"><i class="far fa-file"></i></button>
+                                <button type="button" class="nc-c-btn active" id="btnViewContinuous" onclick="setViewMode('continuous')" title="Continuous Scroll View"><i class="fas fa-scroll"></i></button>
+                            </div>
+
+                            <div class="nc-canvas-bar-group" style="margin-left: 10px;">
+                                <button type="button" class="nc-c-btn" onclick="toggleFindBar()" title="Find in Document"><i class="fas fa-search"></i></button>
+                                <button type="button" class="nc-c-btn" onclick="prevPage()" title="Previous Page"><i class="fas fa-chevron-left"></i></button>
+                                <span class="nc-page-indicator-pill" id="ncCanvasPagePill">1 / 24</span>
+                                <button type="button" class="nc-c-btn" onclick="nextPage()" title="Next Page"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+
+                            <div class="nc-canvas-bar-group" style="margin-left: 14px;">
+                                <button type="button" class="nc-c-btn" onclick="zoomOut()" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                                <span class="nc-zoom-indicator-pill" id="ncCanvasZoomPill">100%</span>
+                                <button type="button" class="nc-c-btn" onclick="zoomIn()" title="Zoom In"><i class="fas fa-plus"></i></button>
+                            </div>
+
+                            <div class="nc-canvas-bar-group" style="margin-left: 10px;">
+                                <button type="button" class="nc-c-btn" onclick="fitToWidth()" title="Fit Width"><i class="fas fa-arrows-left-right-to-line"></i></button>
+                                <button type="button" class="nc-c-btn" onclick="fitToPage()" title="Fit Page"><i class="fas fa-arrows-up-down-to-line"></i></button>
+                                <button type="button" class="nc-c-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
+                                <button type="button" class="nc-c-btn" onclick="rotateDocument(90)" title="Rotate"><i class="fas fa-arrow-up-right-from-square"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Main Canvas Viewport Area -->
+                        <div class="nc-viewport-scroll" id="ncViewportScroll" onscroll="handleViewportScroll()">
+                            <div id="ncPagesContainer" style="display: flex; flex-direction: column; align-items: center; gap: 24px;">
+                                <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 60px 0;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 26px; color: var(--accent-red); margin-bottom: 12px; display: block;"></i>
+                                    Loading PDF document…
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <!-- COLUMN 3: RIGHT TOOLS & PROPERTIES PANEL -->
+                    <aside class="nc-right-tools-panel" id="ncRightToolsPanel">
+                        <div class="nc-right-tabs-header">
+                            <button type="button" class="nc-rt-tab active" data-tab="tools" onclick="openRightPanelTab('tools')">Tools</button>
+                            <button type="button" class="nc-rt-tab" data-tab="properties" onclick="openRightPanelTab('properties')">Properties</button>
+                            <button type="button" class="nc-rt-tab" data-tab="ai" onclick="openRightPanelTab('ai')">AI Assistant</button>
+                        </div>
+
+                        <!-- 1. TOOLS TAB -->
+                        <div id="rightTab-tools" class="nc-right-tab-content">
+                            <!-- Group: Edit PDF -->
+                            <div class="nc-tools-group-box">
+                                <div class="nc-tools-group-title">Edit PDF</div>
+                                <div class="nc-tools-grid">
+                                    <div class="nc-tool-tile" onclick="setActiveTool('add-text')">
+                                        <span class="nc-red-dot-badge"></span>
+                                        <i class="fas fa-pen-to-square" style="color: #f87171;"></i>
+                                        <span>Edit Text &amp; Images</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('add-text')">
+                                        <i class="fas fa-font" style="color: #60a5fa;"></i>
+                                        <span>Add Text</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="triggerImageUpload()">
+                                        <i class="far fa-image" style="color: #34d399;"></i>
+                                        <span>Add Image</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="openOrganizePagesModal()">
+                                        <i class="fas fa-table-cells" style="color: #f87171;"></i>
+                                        <span>Organize Pages</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="activateCropTool()">
+                                        <i class="fas fa-crop" style="color: #fb923c;"></i>
+                                        <span>Crop</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="rotateDocument(90)">
+                                        <i class="fas fa-rotate-right" style="color: #f87171;"></i>
+                                        <span>Rotate</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="deleteCurrentPage()">
+                                        <i class="far fa-trash-can" style="color: #ef4444;"></i>
+                                        <span>Delete</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Group: Annotate -->
+                            <div class="nc-tools-group-box">
+                                <div class="nc-tools-group-title">Annotate</div>
+                                <div class="nc-tools-grid grid-4">
+                                    <div class="nc-tool-tile" onclick="setActiveTool('highlight')">
+                                        <i class="fas fa-highlighter" style="color: #fef08a;"></i>
+                                        <span>Highlight</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('underline')">
+                                        <i class="fas fa-underline" style="color: #fca5a5;"></i>
+                                        <span>Underline</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('strikethrough')">
+                                        <i class="fas fa-strikethrough" style="color: #fca5a5;"></i>
+                                        <span>Strikethrough</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('stickynote')">
+                                        <i class="far fa-comment-dots" style="color: #fb923c;"></i>
+                                        <span>Comment</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="openShapesDropdown()">
+                                        <i class="fas fa-shapes" style="color: #f87171;"></i>
+                                        <span>Shapes</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('draw')">
+                                        <i class="fas fa-pencil" style="color: #f87171;"></i>
+                                        <span>Draw</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="setActiveTool('stamp')">
+                                        <i class="fas fa-stamp" style="color: #f87171;"></i>
+                                        <span>Stamp</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="activateMeasureTool()">
+                                        <i class="fas fa-ruler-combined" style="color: #a78bfa;"></i>
+                                        <span>Measure</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Group: Convert -->
+                            <div class="nc-tools-group-box">
+                                <div class="nc-tools-group-title">Convert</div>
+                                <div class="nc-tools-grid">
+                                    <div class="nc-tool-tile" onclick="convertCurrentPdfToWord()">
+                                        <i class="fas fa-file-word" style="color: #3b82f6; font-size: 16px;"></i>
+                                        <span>PDF to Word</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="convertCurrentPdfToExcel()">
+                                        <i class="fas fa-file-excel" style="color: #10b981; font-size: 16px;"></i>
+                                        <span>PDF to Excel</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="convertCurrentPdfToPpt()">
+                                        <i class="fas fa-file-powerpoint" style="color: #f97316; font-size: 16px;"></i>
+                                        <span>PDF to PPT</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="exportPageAsImage()">
+                                        <i class="fas fa-file-image" style="color: #06b6d4; font-size: 16px;"></i>
+                                        <span>PDF to Image</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="convertCurrentPdfToTxt()">
+                                        <i class="fas fa-file-lines" style="color: #94a3b8; font-size: 16px;"></i>
+                                        <span>PDF to TXT</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="openMoreFormatsModal()">
+                                        <i class="fas fa-ellipsis" style="color: #a1a1aa; font-size: 16px;"></i>
+                                        <span>More Formats</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Group: Protect -->
+                            <div class="nc-tools-group-box">
+                                <div class="nc-tools-group-title">Protect</div>
+                                <div class="nc-tools-grid grid-4">
+                                    <div class="nc-tool-tile" onclick="openProtectModalDirect()">
+                                        <i class="fas fa-lock" style="color: #ef4444;"></i>
+                                        <span>Add Password</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="openUnprotectModalDirect()">
+                                        <i class="fas fa-lock-open" style="color: #ef4444;"></i>
+                                        <span>Remove Password</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="activateRedactTool()">
+                                        <i class="fas fa-marker" style="color: #ef4444;"></i>
+                                        <span>Redact</span>
+                                    </div>
+                                    <div class="nc-tool-tile" onclick="openSignatureModal()">
+                                        <i class="fas fa-signature" style="color: #ef4444;"></i>
+                                        <span>Sign PDF</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. PROPERTIES TAB -->
+                        <div id="rightTab-properties" class="nc-right-tab-content" style="display: none; padding: 16px;">
+                            <div style="font-size: 12px; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Color Palette</div>
+                            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                                <div class="nc-swatch active" style="width:24px; height:24px; border-radius:50%; background:#ef4444; cursor:pointer;" onclick="selectDrawColor('#ef4444')"></div>
+                                <div class="nc-swatch" style="width:24px; height:24px; border-radius:50%; background:#3b82f6; cursor:pointer;" onclick="selectDrawColor('#3b82f6')"></div>
+                                <div class="nc-swatch" style="width:24px; height:24px; border-radius:50%; background:#10b981; cursor:pointer;" onclick="selectDrawColor('#10b981')"></div>
+                                <div class="nc-swatch" style="width:24px; height:24px; border-radius:50%; background:#f59e0b; cursor:pointer;" onclick="selectDrawColor('#f59e0b')"></div>
+                                <div class="nc-swatch" style="width:24px; height:24px; border-radius:50%; background:#8b5cf6; cursor:pointer;" onclick="selectDrawColor('#8b5cf6')"></div>
+                            </div>
+
+                            <div style="font-size: 12px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">Stroke Width</div>
+                            <input type="range" min="1" max="12" value="2" style="width: 100%; accent-color: var(--accent-red);" oninput="setDrawStrokeWidth(this.value)">
+                        </div>
+
+                        <!-- 3. AI ASSISTANT TAB -->
+                        <div id="rightTab-ai" class="nc-right-tab-content" style="display: none; padding: 16px;">
+                            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                                <div style="font-weight: 700; color: #fca5a5; font-size: 13px; margin-bottom: 4px;">
+                                    <i class="fas fa-sparkles"></i> NeuroCore AI Assistant
+                                </div>
+                                <div style="font-size: 11.5px; color: var(--text-muted);">
+                                    Analyze document, extract key entities, or summarize topics instantly.
+                                </div>
+                            </div>
+                            <button type="button" class="nc-btn-save" style="width: 100%; justify-content: center; margin-bottom: 10px;" onclick="runAiPdfSummary()">
+                                <i class="fas fa-file-lines"></i> Summarize Document
+                            </button>
+                            <button type="button" class="nc-btn-open" style="width: 100%; justify-content: center; margin-bottom: 14px;" onclick="runAiKeyInsights()">
+                                <i class="fas fa-lightbulb"></i> Extract Key Insights
+                            </button>
+                            <div id="ncAiOutputArea" style="background: #121216; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 12px; color: #ffffff; display: none;"></div>
+                        </div>
+
+                    </aside>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals (Signature, Save As, File Picker, Protect) -->
+    <div class="pdf-modal-overlay" id="pdfSignatureModal" style="display: none;">
+        <div class="pdf-modal-card">
+            <div class="pdf-modal-header">
+                <h3 style="color:#fff; font-size:15px; font-weight:700;"><i class="fas fa-signature" style="color: #38bdf8;"></i> Digital Signature</h3>
+                <button type="button" class="nc-c-btn" onclick="closeSignatureModal()">&times;</button>
+            </div>
+            <div class="pdf-modal-body">
+                <canvas id="pdfSignaturePadCanvas" style="width: 100%; height: 180px; background: #fff; border-radius: 6px; cursor: crosshair;"></canvas>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                    <button type="button" class="nc-btn-open" onclick="clearSignaturePad()"><i class="fas fa-rotate-left"></i> Clear</button>
+                    <span style="font-size: 11px; color: var(--text-muted);">Draw signature with mouse or touch</span>
+                </div>
+            </div>
+            <div class="pdf-modal-footer">
+                <button type="button" class="nc-btn-open" onclick="closeSignatureModal()">Cancel</button>
+                <button type="button" class="nc-btn-save" onclick="applySignatureToDocument()"><i class="fas fa-check"></i> Place on PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-modal-overlay" id="pdfSaveAsModal" style="display: none;">
+        <div class="pdf-modal-card">
+            <div class="pdf-modal-header">
+                <h3 style="color:#fff; font-size:15px; font-weight:700;"><i class="fas fa-copy" style="color: #ef4444;"></i> Save Document As</h3>
+                <button type="button" class="nc-c-btn" onclick="closeSaveAsModal()">&times;</button>
+            </div>
+            <div class="pdf-modal-body">
+                <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">New Filename (.pdf)</label>
+                <input type="text" id="pdfSaveAsInput" class="nc-search-input" style="background:#121216; border:1px solid #2e2e36; padding:8px 12px; border-radius:6px;" placeholder="My_Document_Copy.pdf">
+            </div>
+            <div class="pdf-modal-footer">
+                <button type="button" class="nc-btn-open" onclick="closeSaveAsModal()">Cancel</button>
+                <button type="button" class="nc-btn-save" onclick="executeSaveAs()"><i class="fas fa-save"></i> Save Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-modal-overlay" id="pdfFilePickerModal" style="display: none;">
+        <div class="pdf-modal-card" style="max-width: 580px;">
+            <div class="pdf-modal-header">
+                <h3 style="color:#fff; font-size:15px; font-weight:700;"><i class="fas fa-folder-open" style="color: #ef4444;"></i> Open PDF Document</h3>
+                <button type="button" class="nc-c-btn" onclick="closeFilePickerModal()">&times;</button>
+            </div>
+            <div class="pdf-modal-body">
+                <div id="pdfLibraryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto;">
+                    <div style="color: var(--text-muted); text-align: center; padding: 20px;">Loading workspace PDFs…</div>
+                </div>
+            </div>
+            <div class="pdf-modal-footer">
+                <button type="button" class="nc-btn-open" onclick="closeFilePickerModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-modal-overlay" id="pdfProtectModal" style="display: none;">
+        <div class="pdf-modal-card">
+            <div class="pdf-modal-header">
+                <h3 style="color:#fff; font-size:15px; font-weight:700;"><i class="fas fa-lock" style="color: #ef4444;"></i> Password Protect PDF (QPDF)</h3>
+                <button type="button" class="nc-c-btn" onclick="closeProtectModal()">&times;</button>
+            </div>
+            <div class="pdf-modal-body">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">User Password</label>
+                    <input type="password" id="pdfProtectPasswordInput" class="nc-search-input" style="background:#121216; border:1px solid #2e2e36; padding:8px 12px; border-radius:6px;" placeholder="Enter password">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Confirm Password</label>
+                    <input type="password" id="pdfProtectConfirmInput" class="nc-search-input" style="background:#121216; border:1px solid #2e2e36; padding:8px 12px; border-radius:6px;" placeholder="Repeat password">
+                </div>
+                <div style="background: #121216; padding: 10px; border-radius: 6px; border: 1px solid #27272e; font-size: 11px; color: var(--text-muted);">
+                    <i class="fas fa-shield-check" style="color: #10b981;"></i> Industry Standard AES-256 Bit QPDF Encryption.
+                </div>
+            </div>
+            <div class="pdf-modal-footer">
+                <button type="button" class="nc-btn-open" onclick="closeProtectModal()">Cancel</button>
+                <button type="button" class="nc-btn-save" onclick="executeProtectPdf()"><i class="fas fa-lock"></i> Encrypt Document</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================== -->
+    <!-- FLOATING TEXT SELECTION QUICK ACTION BAR                                    -->
+    <!-- ========================================================================== -->
+    <div id="ncTextSelectionBar" class="nc-text-select-toolbar" style="display: none;">
+        <button type="button" class="nc-sel-btn" onclick="applySelectionAnnotation('highlight')" title="Highlight Selection (H)">
+            <i class="fas fa-highlighter" style="color: #fef08a;"></i> <span>Highlight</span>
+        </button>
+        <button type="button" class="nc-sel-btn" onclick="applySelectionAnnotation('underline')" title="Underline Selection (U)">
+            <i class="fas fa-underline" style="color: #fca5a5;"></i> <span>Underline</span>
+        </button>
+        <button type="button" class="nc-sel-btn" onclick="applySelectionAnnotation('strikethrough')" title="Strikethrough Selection (S)">
+            <i class="fas fa-strikethrough" style="color: #fca5a5;"></i> <span>Strike</span>
+        </button>
+        <button type="button" class="nc-sel-btn" onclick="editSelectedTextInPlace()" title="Edit Text Data in Place (E)">
+            <i class="fas fa-pen-to-square" style="color: #38bdf8;"></i> <span>Edit Text</span>
+        </button>
+        <button type="button" class="nc-sel-btn" onclick="commentOnSelection()" title="Add Comment (C)">
+            <i class="far fa-comment-dots" style="color: #fb923c;"></i> <span>Comment</span>
+        </button>
+        <button type="button" class="nc-sel-btn" onclick="copySelectionText()" title="Copy to Clipboard (Ctrl+C)">
+            <i class="far fa-copy" style="color: #cbd5e1;"></i>
+        </button>
+    </div>
+
+    <!-- ========================================================================== -->
+    <!-- IN-PLACE TEXT EDITOR POPUP                                                 -->
+    <!-- ========================================================================== -->
+    <div id="ncInlineTextEditModal" class="pdf-modal-overlay" style="display: none;">
+        <div class="pdf-modal-card" style="max-width: 520px;">
+            <div class="pdf-modal-header">
+                <h3 style="color:#fff; font-size:15px; font-weight:700;"><i class="fas fa-pen-to-square" style="color: #38bdf8;"></i> Edit PDF Document Text</h3>
+                <button type="button" class="nc-c-btn" onclick="closeInPlaceTextEditor()">&times;</button>
+            </div>
+            <div class="pdf-modal-body">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 700;">Original Text on Document</label>
+                    <div id="ncInlineOriginalTextPreview" style="background: #111216; border: 1px solid #23252d; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #94a3b8; font-family: monospace; max-height: 80px; overflow-y: auto;"></div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 11px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase; font-weight: 700;">Replacement / Edited Text</label>
+                    <textarea id="ncInlineReplacementInput" class="nc-search-input" style="width: 100%; height: 80px; background: #161820; border: 1px solid #3b82f6; border-radius: 6px; padding: 8px 12px; font-size: 13.5px; color: #ffffff; resize: vertical; line-height: 1.4;" placeholder="Enter replacement text..."></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Font Size</label>
+                        <select id="ncInlineFontSizeSelect" class="nc-search-input" style="background:#161820; border:1px solid #282a34; padding:6px 10px; border-radius:6px; width: 100%;">
+                            <option value="10">10 pt</option>
+                            <option value="11">11 pt</option>
+                            <option value="12">12 pt</option>
+                            <option value="14" selected>14 pt</option>
+                            <option value="16">16 pt</option>
+                            <option value="18">18 pt</option>
+                            <option value="20">20 pt</option>
+                            <option value="24">24 pt</option>
+                            <option value="28">28 pt</option>
+                            <option value="32">32 pt</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Font Family</label>
+                        <select id="ncInlineFontFamilySelect" class="nc-search-input" style="background:#161820; border:1px solid #282a34; padding:6px 10px; border-radius:6px; width: 100%;">
+                            <option value="Helvetica" selected>Helvetica / Arial</option>
+                            <option value="TimesRoman">Times New Roman</option>
+                            <option value="Courier">Courier / Monospace</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Text Color</label>
+                        <select id="ncInlineColorSelect" class="nc-search-input" style="background:#161820; border:1px solid #282a34; padding:6px 10px; border-radius:6px; width: 100%;">
+                            <option value="#000000" selected>Black (#000)</option>
+                            <option value="#1e293b">Dark Slate</option>
+                            <option value="#ef4444">Crimson Red</option>
+                            <option value="#3b82f6">Royal Blue</option>
+                            <option value="#10b981">Green</option>
+                            <option value="#ffffff">White</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; background: #12141a; border: 1px solid #222632; border-radius: 6px; padding: 8px 12px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cbd5e1; cursor: pointer;">
+                        <input type="checkbox" id="ncInlineWhiteoutCheck" checked style="accent-color: #3b82f6;">
+                        <span>Seamless Whiteout under text (Covers original)</span>
+                    </label>
+                    <button type="button" class="nc-c-btn" style="color: #ef4444; font-size: 11.5px; background: transparent; border: none; cursor: pointer;" onclick="deleteSelectedOriginalText()">
+                        <i class="far fa-trash-can"></i> Remove Text
+                    </button>
+                </div>
+            </div>
+            <div class="pdf-modal-footer">
+                <button type="button" class="nc-btn-open" onclick="closeInPlaceTextEditor()">Cancel</button>
+                <button type="button" class="nc-btn-save" onclick="applyInPlaceTextEdit()" style="background: #3b82f6; border-color: #3b82f6;">
+                    <i class="fas fa-check"></i> Apply Edit to PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STICKY NOTE COMMENT DETAILS POPOVER -->
+    <div id="ncStickyNotePopover" class="nc-comment-popover" style="display: none;">
+        <div class="nc-comment-popover-header">
+            <span id="ncNoteAuthor" style="font-weight: 700; color: #f8fafc; font-size: 12px;">Comment</span>
+            <span id="ncNoteTime" style="font-size: 10.5px; color: #94a3b8;">Just now</span>
+        </div>
+        <div id="ncNoteBody" class="nc-comment-popover-body"></div>
+        <div class="nc-comment-popover-footer">
+            <button type="button" class="nc-c-btn" onclick="deleteCurrentStickyNote()" style="color: #ef4444; font-size: 11px;"><i class="far fa-trash-can"></i> Delete</button>
+            <button type="button" class="nc-c-btn" onclick="closeStickyNotePopover()" style="font-size: 11px;">Close</button>
+        </div>
+    </div>
+
+    <script src="pdf-editor.js"></script>
+</body>
+</html>
