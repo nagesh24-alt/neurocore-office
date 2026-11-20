@@ -103,6 +103,17 @@ Start the server:
 node server.js
 ```
 
+PDF encryption requires an owner password from the environment. In PowerShell,
+set a strong, unique value for the current terminal before starting the server:
+
+```powershell
+$env:PDF_OWNER_PASSWORD = "<your-strong-random-password>"
+npm start
+```
+
+For production, configure `PDF_OWNER_PASSWORD` through your hosting provider's
+secret manager. Do not commit the value to source control.
+
 Open your browser:
 
 ```

@@ -16,6 +16,19 @@ function getPythonExecutable() {
     return process.platform === "win32" ? "python" : "python3";
 }
 
+function getPdfOwnerPassword(res) {
+    const ownerPassword = process.env.PDF_OWNER_PASSWORD;
+    if (ownerPassword && ownerPassword.trim()) {
+        return ownerPassword;
+    }
+
+    res.status(503).json({
+        success: false,
+        message: "PDF encryption is unavailable because the server is not configured."
+    });
+    return null;
+}
+
 const mammoth = require("mammoth");
 const AdmZip = require("adm-zip");
 const {
@@ -2636,7 +2649,8 @@ app.post("/pdf/protect", (req, res) => {
 
     fs.mkdirSync(protectedDir, { recursive: true });
 
-    const ownerPassword = "NeuroCoreOfficeOwner123";
+    const ownerPassword = getPdfOwnerPassword(res);
+    if (!ownerPassword) return;
 
     execFile(
         "qpdf",
@@ -2854,8 +2868,9 @@ app.post("/pdf/permissions", (req, res) => {
 
     fs.mkdirSync(protectedDir, { recursive: true });
 
-    // Ensure owner password is distinct from user password so restrictions are enforced
-    const ownerPassword = "NeuroCoreOfficeOwner123";
+    // Keep the PDF owner password outside source control.
+    const ownerPassword = getPdfOwnerPassword(res);
+    if (!ownerPassword) return;
 
     // Default permissions
     let printPermission = "--print=full";
@@ -3008,7 +3023,13 @@ app.post("/pdf/change-password", (req, res) => {
             }
 
             // Step 2: Encrypt again with the new password and stable owner password
-            const ownerPassword = "NeuroCoreOfficeOwner123";
+            const ownerPassword = getPdfOwnerPassword(res);
+            if (!ownerPassword) {
+                if (fs.existsSync(tempFile)) {
+                    fs.unlinkSync(tempFile);
+                }
+                return;
+            }
             execFile(
                 "qpdf",
                 [
