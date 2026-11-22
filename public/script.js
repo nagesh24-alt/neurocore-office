@@ -328,15 +328,19 @@ let dashboardFilterState = {
 };
 
 function displayDashboard(files) {
-    currentDashboardFiles = Array.isArray(files) ? files : [];
+    // Renderer must never modify the master document collection.
+    const renderFiles = Array.isArray(files) ? files : [];
+
+    // Statistics always represent the complete document collection.
     updateCategoryStats(currentDashboardFiles);
+
     const body = document.getElementById("pdfTableBody");
     if (!body) return;
 
     body.innerHTML = "";
 
-    // Apply dashboard filters
-    let displayList = [...currentDashboardFiles];
+    // Apply dashboard filters to the supplied view only.
+    let displayList = [...renderFiles];
 
     if (dashboardFilterState.selectedTags) {
         const targetTag = dashboardFilterState.selectedTags.toLowerCase().trim();
@@ -1683,12 +1687,18 @@ async function loadDocuments() {
     const response = await fetch("/documents/list");
     const result = await parseJsonResponse(response);
 
-    if (result.success) {
-        populateDynamicFilterOptions(result.files);
-        displayDashboard(result.files);
-        // Keep the legacy "DOCX Documents" panel in sync with the same
-        // unified file list/state used by the main dashboard.
-        loadDocxFiles();
+    if (result.success && Array.isArray(result.files)) {
+
+        // Update the authoritative master document collection.
+        currentDashboardFiles = result.files;
+
+        populateDynamicFilterOptions(currentDashboardFiles);
+
+        // Render without modifying master state.
+        displayDashboard(currentDashboardFiles);
+
+        // Synchronize DOCX module.
+        await loadDocxFiles();
     }
 }
 
@@ -2834,11 +2844,15 @@ async function loadDocxFiles() {
         try {
             const res = await fetch("/documents/all");
             const data = await res.json();
+
             if (data.success && Array.isArray(data.files)) {
-                currentDashboardFiles = data.files;
-                docxFiles = currentDashboardFiles.filter(file => {
+                const allFiles = data.files;
+
+                docxFiles = allFiles.filter(file => {
                     const name = (file.name || "").toLowerCase();
-                    return file.type === "docx" || name.endsWith(".docx") || name.endsWith(".doc");
+                    return file.type === "docx" ||
+                           name.endsWith(".docx") ||
+                           name.endsWith(".doc");
                 });
             }
         } catch (e) {}
