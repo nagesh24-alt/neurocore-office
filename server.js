@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const { registerDocxCopyRoute } = require("./routes/docxCopy");
+const { replaceFileAtomically } = require("./utils/atomicFileReplace");
 const { execFile } = require("child_process");
 
 function getPythonExecutable() {
@@ -703,6 +704,8 @@ function getFileMetadata(filename, filePath, allTags = {}, allDesc = null, allSt
     return metadata;
 }
 
+app.use("/api/pdf/save-workspace", express.json({ limit: "75mb" }));
+app.use("/pdf/save-workspace", express.json({ limit: "75mb" }));
 app.use(express.json());
 registerDocxCopyRoute(app, path.join(__dirname, "uploads"));
 app.use(express.static("public"));
@@ -2306,12 +2309,12 @@ app.post("/api/pdf/organize-pages", async (req, res) => {
             const copiedPages = await newDoc.copyPages(pdfDoc, pageOrder);
             copiedPages.forEach(p => newDoc.addPage(p));
             const newBytes = await newDoc.save();
-            fs.writeFileSync(filePath, newBytes);
+            replaceFileAtomically(filePath, newBytes);
             return res.json({ success: true, message: "Pages reordered successfully.", totalPages: newDoc.getPageCount() });
         }
 
         const modifiedBytes = await pdfDoc.save();
-        fs.writeFileSync(filePath, modifiedBytes);
+        replaceFileAtomically(filePath, modifiedBytes);
 
         res.json({
             success: true,

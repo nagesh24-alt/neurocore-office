@@ -12,6 +12,10 @@
 const pdfState = {
     filename: null,
     pdfDoc: null,
+    loadingTask: null,
+    renderTasks: new Map(),
+    pdfOperations: new Set(),
+    loadGeneration: 0,
     numPages: 0,
     currentPage: 1,
     scale: 1.0,
@@ -48,6 +52,8 @@ const pdfState = {
     isSigning: false
 };
 
+let pdfCleanupPromise = null;
+
 window.addEventListener("DOMContentLoaded", () => {
     initPdfEditor();
 });
@@ -55,7 +61,7 @@ window.addEventListener("DOMContentLoaded", () => {
 async function initPdfEditor() {
     const urlParams = new URLSearchParams(window.location.search);
     const fileParam = urlParams.get("file") || urlParams.get("filename") || "Project_Proposal.pdf";
-    pdfState.filename = decodeURIComponent(fileParam).trim();
+    pdfState.filename = fileParam.trim();
 
     // Update Top Document Title
     const titleEl = document.getElementById("ncDocTitleText");
@@ -85,7 +91,17 @@ async function initPdfEditor() {
 // ==========================================================================
 
 async function loadPdfDocument(filename) {
+    const loadGeneration = ++pdfState.loadGeneration;
+    let loadingTask = null;
+
     try {
+        await cleanupPdfDocument();
+        if (loadGeneration !== pdfState.loadGeneration) return;
+
+        if (!window.pdfjsLib || typeof window.pdfjsLib.getDocument !== "function") {
+            throw new Error("PDF.js failed to load. Check your connection and reload the editor.");
+        }
+
         const container = document.getElementById("ncPagesContainer");
         if (container) {
             container.innerHTML = `
@@ -97,24 +113,50 @@ async function loadPdfDocument(filename) {
         }
 
         const pdfUrl = `/pdf/${encodeURIComponent(filename)}`;
-        const loadingTask = window.pdfjsLib.getDocument({
+        loadingTask = window.pdfjsLib.getDocument({
             url: pdfUrl,
             cMapUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/cmaps/",
             cMapPacked: true
         });
+        pdfState.loadingTask = loadingTask;
 
-        pdfState.pdfDoc = await loadingTask.promise;
-        pdfState.numPages = pdfState.pdfDoc.numPages;
+        const pdfDoc = await loadingTask.promise;
+        if (loadGeneration !== pdfState.loadGeneration) {
+            try {
+                await pdfDoc.destroy();
+            } catch (cleanupError) {
+                console.warn("Failed to destroy stale PDF document:", cleanupError);
+            }
+            return;
+        }
+
+        if (pdfState.loadingTask === loadingTask) {
+            pdfState.loadingTask = null;
+        }
+        pdfState.pdfDoc = pdfDoc;
+        pdfState.numPages = pdfDoc.numPages;
         pdfState.currentPage = 1;
 
         updatePageCounters();
-        await loadBackendAnnotations(filename);
-        await renderAllPages();
-        await renderThumbnails();
-        loadDocumentMetadata();
+        await loadBackendAnnotations(filename, loadGeneration);
+        if (loadGeneration !== pdfState.loadGeneration) return;
+
+        await renderAllPages(loadGeneration);
+        if (loadGeneration !== pdfState.loadGeneration) return;
+
+        await renderThumbnails(loadGeneration);
+        if (loadGeneration !== pdfState.loadGeneration) return;
+
+        await loadDocumentMetadata(pdfDoc, loadGeneration);
+        if (loadGeneration !== pdfState.loadGeneration) return;
 
         showToast(`Opened "${filename}" (${pdfState.numPages} Pages)`, "success");
     } catch (err) {
+        if (pdfState.loadingTask === loadingTask) {
+            pdfState.loadingTask = null;
+        }
+        if (loadGeneration !== pdfState.loadGeneration) return;
+
         console.error("Failed to load PDF:", err);
         const container = document.getElementById("ncPagesContainer");
         if (container) {
@@ -132,13 +174,76 @@ async function loadPdfDocument(filename) {
     }
 }
 
-async function renderAllPages() {
+function cleanupPdfDocument() {
+    if (pdfCleanupPromise) return pdfCleanupPromise;
+
+    const cleanupPromise = (async () => {
+        const loadingTask = pdfState.loadingTask;
+        const pdfDoc = pdfState.pdfDoc;
+        pdfState.loadingTask = null;
+        pdfState.pdfDoc = null;
+        pdfState.numPages = 0;
+
+        const renderTasks = Array.from(pdfState.renderTasks.values());
+        for (const task of renderTasks) {
+            if (typeof task.cancel === "function") {
+                try {
+                    task.cancel();
+                } catch (err) {
+                    console.warn("Failed to cancel PDF render task:", err);
+                }
+            }
+        }
+
+        await Promise.allSettled(renderTasks.map(task => task.promise));
+        await Promise.allSettled(Array.from(pdfState.pdfOperations));
+
+        if (loadingTask) {
+            await loadingTask.destroy();
+        }
+        if (pdfDoc) {
+            await pdfDoc.destroy();
+        }
+    })();
+
+    pdfCleanupPromise = cleanupPromise;
+    return cleanupPromise.finally(() => {
+        if (pdfCleanupPromise === cleanupPromise) {
+            pdfCleanupPromise = null;
+        }
+    });
+}
+
+async function awaitTrackedRenderTask(task) {
+    pdfState.renderTasks.set(task, task);
+    try {
+        await task.promise;
+    } finally {
+        pdfState.renderTasks.delete(task);
+    }
+}
+
+function trackPdfOperation(operation) {
+    pdfState.pdfOperations.add(operation);
+    return operation.finally(() => {
+        pdfState.pdfOperations.delete(operation);
+    });
+}
+
+function isCurrentPdfDocument(pdfDoc, loadGeneration) {
+    return pdfState.pdfDoc === pdfDoc && pdfState.loadGeneration === loadGeneration;
+}
+
+async function renderAllPages(loadGeneration = pdfState.loadGeneration) {
     const container = document.getElementById("ncPagesContainer");
-    if (!container || !pdfState.pdfDoc) return;
+    const pdfDoc = pdfState.pdfDoc;
+    if (!container || !pdfDoc || !isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
 
     container.innerHTML = "";
 
     for (let pageNum = 1; pageNum <= pdfState.numPages; pageNum++) {
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
         const pageWrapper = document.createElement("div");
         pageWrapper.id = `pdf-page-wrapper-${pageNum}`;
         pageWrapper.className = `nc-pdf-page-container ${pageNum === pdfState.currentPage ? "active-page" : ""} ${getModeClass()}`;
@@ -167,7 +272,7 @@ async function renderAllPages() {
         container.appendChild(pageWrapper);
 
         attachPageInteractiveEvents(pageWrapper, pageNum);
-        await renderSinglePageCanvas(pageNum);
+        await renderSinglePageCanvas(pageNum, pdfDoc, loadGeneration);
     }
 }
 
@@ -181,11 +286,18 @@ function getModeClass() {
     return "";
 }
 
-async function renderSinglePageCanvas(pageNum) {
-    if (!pdfState.pdfDoc) return;
+function renderSinglePageCanvas(pageNum, pdfDoc = pdfState.pdfDoc, loadGeneration = pdfState.loadGeneration) {
+    if (!pdfDoc || !isCurrentPdfDocument(pdfDoc, loadGeneration)) return Promise.resolve();
+    return trackPdfOperation(renderSinglePageCanvasOperation(pageNum, pdfDoc, loadGeneration));
+}
+
+async function renderSinglePageCanvasOperation(pageNum, pdfDoc, loadGeneration) {
+    if (!pdfDoc || !isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
 
     try {
-        const page = await pdfState.pdfDoc.getPage(pageNum);
+        const page = await pdfDoc.getPage(pageNum);
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
         const pageWrapper = document.getElementById(`pdf-page-wrapper-${pageNum}`);
         const canvas = document.getElementById(`pdf-canvas-page-${pageNum}`);
         const textLayer = document.getElementById(`pdf-text-layer-${pageNum}`);
@@ -213,11 +325,13 @@ async function renderSinglePageCanvas(pageNum) {
         const ctx = canvas.getContext("2d");
         const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
 
-        await page.render({
+        const renderTask = page.render({
             canvasContext: ctx,
             transform: transform,
             viewport: viewport
-        }).promise;
+        });
+        await awaitTrackedRenderTask(renderTask);
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
 
         if (textLayer) {
             textLayer.innerHTML = "";
@@ -225,6 +339,8 @@ async function renderSinglePageCanvas(pageNum) {
             textLayer.style.height = `${viewport.height}px`;
             
             const textContent = await page.getTextContent();
+            if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
             if (window.pdfjsLib && window.pdfjsLib.renderTextLayer) {
                 const textTask = window.pdfjsLib.renderTextLayer({
                     textContent: textContent,
@@ -232,7 +348,8 @@ async function renderSinglePageCanvas(pageNum) {
                     viewport: viewport,
                     textDivs: []
                 });
-                await textTask.promise;
+                await awaitTrackedRenderTask(textTask);
+                if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
                 
                 // Attach individual span listeners for in-place text editing & clicking
                 setupTextLayerSpanListeners(textLayer, pageNum, viewport);
@@ -241,7 +358,9 @@ async function renderSinglePageCanvas(pageNum) {
 
         renderPageAnnotations(pageNum, viewport);
     } catch (e) {
-        console.warn(`Error rendering page ${pageNum}:`, e);
+        if (isCurrentPdfDocument(pdfDoc, loadGeneration)) {
+            console.warn(`Error rendering page ${pageNum}:`, e);
+        }
     }
 }
 
@@ -1291,6 +1410,15 @@ function parseHexColor(hex) {
     };
 }
 
+function bytesToBase64(bytes) {
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+    }
+    return btoa(binary);
+}
+
 async function savePdfWorkspace() {
     try {
         showToast("Baking text edits & annotations into PDF…", "info", 3500);
@@ -1304,8 +1432,7 @@ async function savePdfWorkspace() {
 
         let pdfBase64 = null;
         if (bakedBytes) {
-            const binary = String.fromCharCode.apply(null, new Uint8Array(bakedBytes));
-            pdfBase64 = btoa(binary);
+            pdfBase64 = bytesToBase64(new Uint8Array(bakedBytes));
         }
 
         let res = await fetch("/api/pdf/save-workspace", {
@@ -1408,13 +1535,16 @@ document.addEventListener("click", () => {
 // 9. LIVE THUMBNAILS PANEL
 // ==========================================================================
 
-async function renderThumbnails() {
+async function renderThumbnails(loadGeneration = pdfState.loadGeneration) {
     const container = document.getElementById("ncThumbnailsScrollArea");
-    if (!container || !pdfState.pdfDoc) return;
+    const pdfDoc = pdfState.pdfDoc;
+    if (!container || !pdfDoc || !isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
 
     container.innerHTML = "";
 
     for (let pageNum = 1; pageNum <= pdfState.numPages; pageNum++) {
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
         const thumbCard = document.createElement("div");
         thumbCard.id = `pdf-thumb-${pageNum}`;
         thumbCard.className = `nc-thumb-item ${pageNum === pdfState.currentPage ? "active" : ""}`;
@@ -1436,13 +1566,20 @@ async function renderThumbnails() {
         thumbCard.appendChild(pageNumLabel);
         container.appendChild(thumbCard);
 
-        renderSingleThumbnail(pageNum, canvas);
+        renderSingleThumbnail(pageNum, canvas, pdfDoc, loadGeneration);
     }
 }
 
-async function renderSingleThumbnail(pageNum, canvas) {
+function renderSingleThumbnail(pageNum, canvas, pdfDoc, loadGeneration) {
+    if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return Promise.resolve();
+    return trackPdfOperation(renderSingleThumbnailOperation(pageNum, canvas, pdfDoc, loadGeneration));
+}
+
+async function renderSingleThumbnailOperation(pageNum, canvas, pdfDoc, loadGeneration) {
     try {
-        const page = await pdfState.pdfDoc.getPage(pageNum);
+        const page = await pdfDoc.getPage(pageNum);
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
         const effectiveRotation = ((page.rotate || 0) + pdfState.rotation + (pdfState.pageRotations[pageNum] || 0)) % 360;
         const viewport = page.getViewport({ scale: 0.22, rotation: effectiveRotation });
 
@@ -1450,12 +1587,15 @@ async function renderSingleThumbnail(pageNum, canvas) {
         canvas.height = viewport.height;
 
         const ctx = canvas.getContext("2d");
-        await page.render({
+        const renderTask = page.render({
             canvasContext: ctx,
             viewport: viewport
-        }).promise;
+        });
+        await awaitTrackedRenderTask(renderTask);
     } catch (e) {
-        console.warn(`Error rendering thumb for page ${pageNum}:`, e);
+        if (isCurrentPdfDocument(pdfDoc, loadGeneration)) {
+            console.warn(`Error rendering thumb for page ${pageNum}:`, e);
+        }
     }
 }
 
@@ -1519,24 +1659,42 @@ function setZoom(newScale) {
 
 function fitToWidth() {
     const viewport = document.getElementById("ncViewportScroll");
-    if (!viewport || !pdfState.pdfDoc) return;
-    pdfState.pdfDoc.getPage(pdfState.currentPage).then(page => {
+    const pdfDoc = pdfState.pdfDoc;
+    const loadGeneration = pdfState.loadGeneration;
+    if (!viewport || !pdfDoc) return;
+
+    const operation = pdfDoc.getPage(pdfState.currentPage).then(page => {
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
         const vp = page.getViewport({ scale: 1.0 });
         const availWidth = viewport.clientWidth - 48;
         const newScale = Math.max(0.4, Math.min(availWidth / vp.width, 2.5));
         setZoom(Math.round(newScale * 100) / 100);
+    }).catch(err => {
+        if (isCurrentPdfDocument(pdfDoc, loadGeneration)) {
+            console.warn("Failed to fit PDF to width:", err);
+        }
     });
+    trackPdfOperation(operation);
 }
 
 function fitToPage() {
     const viewport = document.getElementById("ncViewportScroll");
-    if (!viewport || !pdfState.pdfDoc) return;
-    pdfState.pdfDoc.getPage(pdfState.currentPage).then(page => {
+    const pdfDoc = pdfState.pdfDoc;
+    const loadGeneration = pdfState.loadGeneration;
+    if (!viewport || !pdfDoc) return;
+
+    const operation = pdfDoc.getPage(pdfState.currentPage).then(page => {
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
         const vp = page.getViewport({ scale: 1.0 });
         const availHeight = viewport.clientHeight - 60;
         const newScale = Math.max(0.4, Math.min(availHeight / vp.height, 2.0));
         setZoom(Math.round(newScale * 100) / 100);
+    }).catch(err => {
+        if (isCurrentPdfDocument(pdfDoc, loadGeneration)) {
+            console.warn("Failed to fit PDF to page:", err);
+        }
     });
+    trackPdfOperation(operation);
 }
 
 function prevPage() {
@@ -1660,11 +1818,11 @@ function switchNavSection(section) {
 // 13. BACKEND PERSISTENCE & CONVERSIONS
 // ==========================================================================
 
-async function loadBackendAnnotations(filename) {
+async function loadBackendAnnotations(filename, loadGeneration = pdfState.loadGeneration) {
     try {
         const res = await fetch(`/api/pdf/annotations/${encodeURIComponent(filename)}`);
         const data = await res.json();
-        if (data.success && data.annotations) {
+        if (loadGeneration === pdfState.loadGeneration && data.success && data.annotations) {
             pdfState.annotations = Array.isArray(data.annotations) ? {} : data.annotations;
         }
     } catch(e) {}
@@ -1869,8 +2027,7 @@ async function executeSaveAs() {
 
         let pdfBase64 = null;
         if (bakedBytes) {
-            const binary = String.fromCharCode.apply(null, new Uint8Array(bakedBytes));
-            pdfBase64 = btoa(binary);
+            pdfBase64 = bytesToBase64(new Uint8Array(bakedBytes));
         }
 
         const res = await fetch("/api/pdf/save-workspace", {
@@ -1989,9 +2146,13 @@ function runAiKeyInsights() {
     }, 700);
 }
 
-async function loadDocumentMetadata() {
+async function loadDocumentMetadata(pdfDoc = pdfState.pdfDoc, loadGeneration = pdfState.loadGeneration) {
+    if (!pdfDoc) return;
+
     try {
-        const meta = await pdfState.pdfDoc.getMetadata();
+        const meta = await trackPdfOperation(pdfDoc.getMetadata());
+        if (!isCurrentPdfDocument(pdfDoc, loadGeneration)) return;
+
         const metaEl = document.getElementById("ncDocMetaText");
         if (metaEl) {
             metaEl.textContent = `2.4 MB  •  ${pdfState.numPages} pages  •  Last modified: ${new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
