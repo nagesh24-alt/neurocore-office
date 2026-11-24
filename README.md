@@ -120,9 +120,28 @@ Open your browser:
 http://localhost:3000
 ```
 
+## Testing
+
+Run the search regression tests with:
+
+```bash
+npm test
+```
+
 ---
 
 ## 📡 API Endpoints
+
+### Documents
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/documents/copy` | Copy an uploaded DOCX using the next available `_copy` filename |
+
+Send a JSON body containing only the DOCX filename, such as
+`{"filename":"Project_Report.docx"}`. The endpoint returns `400` for invalid
+filenames, `404` when the original is missing, `409` when no unique copy name
+is available, and `500` for unexpected filesystem errors.
 
 ### PDF
 
