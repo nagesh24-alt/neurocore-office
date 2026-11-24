@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { registerDocxCopyRoute } = require("./routes/docxCopy");
 const { execFile } = require("child_process");
 
 function getPdfOwnerPassword(res) {
@@ -661,6 +662,7 @@ function getFileMetadata(filename, filePath, allTags = {}, allDesc = null, allSt
         size: stats.size,
         modified: stats.mtime,
         owner: "You",
+        folder: "Root",
         status: "Normal",
         starred: isStarred,
         tags: allTags[filename] || [],
@@ -672,6 +674,7 @@ function getFileMetadata(filename, filePath, allTags = {}, allDesc = null, allSt
 }
 
 app.use(express.json());
+registerDocxCopyRoute(app, path.join(__dirname, "uploads"));
 app.use(express.static("public"));
 app.use("/api/db", mongoRoutes);
 //upload PDF API
@@ -4493,14 +4496,18 @@ app.get("/docx/list", (req, res) => {
 
     try {
         const allStarred = readStarred();
+        const allTags = readTags();
         const files = fs.readdirSync(uploadFolder)
             .filter(filename => filename.toLowerCase().endsWith(".docx"))
             .map(filename => {
                 const stats = fs.statSync(path.join(uploadFolder, filename));
                 return {
                     name: filename,
+                    type: "docx",
                     size: stats.size,
                     modified: stats.mtime,
+                    folder: "Root",
+                    tags: allTags[filename] || [],
                     starred: Boolean(allStarred[filename] || allStarred[path.basename(filename)])
                 };
             });

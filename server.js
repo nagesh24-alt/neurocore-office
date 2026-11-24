@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const { registerDocxCopyRoute } = require("./routes/docxCopy");
 const { execFile } = require("child_process");
 
 function getPythonExecutable() {
@@ -691,6 +692,7 @@ function getFileMetadata(filename, filePath, allTags = {}, allDesc = null, allSt
         size: stats.size,
         modified: stats.mtime,
         owner: "You",
+        folder: "Root",
         status: "Normal",
         starred: isStarred,
         tags: allTags[filename] || [],
@@ -702,6 +704,7 @@ function getFileMetadata(filename, filePath, allTags = {}, allDesc = null, allSt
 }
 
 app.use(express.json());
+registerDocxCopyRoute(app, path.join(__dirname, "uploads"));
 app.use(express.static("public"));
 if (mongoRoutes) {
     app.use("/api/db", mongoRoutes);
@@ -2445,56 +2448,72 @@ app.delete("/protected/:filename", (req, res) => {
 });
 //Search PDFs
 app.get("/pdfs/search", async (req, res) => {
-
-    const query = req.query.q?.toLowerCase() || "";
-
-    const uploadFolder = path.join(__dirname, "uploads");
-
-    // Ensure uploads folder exists before searching.
-    if (!fs.existsSync(uploadFolder)) {
-        return res.json({
-            success: true,
-            total: 0,
-            files: []
-        });
-    }
+    const query = (req.query.q || "")
+        .toLowerCase()
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    const queryTokens = query.split(" ").filter(Boolean);
 
     try {
-        const files = fs.readdirSync(uploadFolder);
+        const folders = [
+            path.join(__dirname, "uploads"),
+            path.join(__dirname, "documents"),
+            path.join(__dirname, "unprotected")
+        ];
         const allTags = readTags();
+        const seen = new Set();
+        const pdfFiles = [];
 
-        const pdfFiles = await Promise.all(
-            files
-                .filter(filename => filename.toLowerCase().endsWith(".pdf"))
-                .map(async (filename) => {
-                    const filePath = path.join(uploadFolder, filename);
-                    const stats = fs.statSync(filePath);
+        const collectPdfs = (folder) => {
+            if (!fs.existsSync(folder)) return;
+            for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+                const fullPath = path.join(folder, entry.name);
+                if (entry.isDirectory()) {
+                    collectPdfs(fullPath);
+                } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".pdf") && !seen.has(fullPath)) {
+                    seen.add(fullPath);
+                    pdfFiles.push(fullPath);
+                }
+            }
+        };
 
-                    let pages = "--";
-                    try {
-                        const dataBuffer = fs.readFileSync(filePath);
-                        pages = await parsePdfPages(dataBuffer);
-                    } catch (e) {
-                        console.warn(`Skipping page count for ${filename}: invalid or unreadable PDF`);
-                    }
+        folders.forEach(collectPdfs);
 
-                    return {
-                        name: filename,
-                        size: stats.size,
-                        pages: pages,
-                        modified: stats.mtime,
-                        owner: "You",
-                        status: "Normal",
-                        tags: allTags[filename] || []
-                    };
-                })
-        );
+        const filtered = (await Promise.all(pdfFiles.map(async filePath => {
+            const filename = path.basename(filePath);
+            const stats = fs.statSync(filePath);
+            let pages = "--";
+            try {
+                pages = await parsePdfPages(fs.readFileSync(filePath));
+            } catch (e) {
+                console.warn(`Skipping page count for ${filename}: invalid or unreadable PDF`);
+            }
 
-        // Filter based on query (checks filename or tags)
-        const filtered = pdfFiles.filter(file => {
-            const nameMatch = file.name.toLowerCase().includes(query);
-            const tagMatch = file.tags.some(tag => tag.toLowerCase().includes(query));
-            return nameMatch || tagMatch;
+            return {
+                name: filename,
+                size: stats.size,
+                pages,
+                modified: stats.mtime,
+                owner: "You",
+                status: "Normal",
+                tags: allTags[filename] || [],
+                folder: path.basename(path.dirname(filePath))
+            };
+        }))).filter(file => {
+            if (queryTokens.length === 0) return true;
+            const cleanName = file.name.replace(/^\d{10,14}-/, "").replace(/\.pdf$/i, "");
+            const searchableText = [
+                file.name,
+                cleanName,
+                file.folder,
+                file.owner,
+                ...file.tags
+            ].join(" ").toLowerCase()
+                .replace(/[_\-]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+            return queryTokens.every(token => searchableText.includes(token));
         });
 
         res.json({
@@ -4741,14 +4760,18 @@ app.get("/docx/list", (req, res) => {
 
     try {
         const allStarred = readStarred();
+        const allTags = readTags();
         const files = fs.readdirSync(uploadFolder)
             .filter(filename => filename.toLowerCase().endsWith(".docx"))
             .map(filename => {
                 const stats = fs.statSync(path.join(uploadFolder, filename));
                 return {
                     name: filename,
+                    type: "docx",
                     size: stats.size,
                     modified: stats.mtime,
+                    folder: "Root",
+                    tags: allTags[filename] || [],
                     starred: Boolean(allStarred[filename] || allStarred[path.basename(filename)])
                 };
             });

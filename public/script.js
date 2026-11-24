@@ -38,6 +38,40 @@ async function parseJsonResponse(response) {
 let selectionMode = false;
 let selectedFiles = [];
 let currentDashboardFiles = [];
+let globalDocumentSearchQuery = "";
+
+function normalizeDocumentSearchQuery(query) {
+    return String(query || "")
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function matchesDocumentSearch(file, query) {
+    const tokens = normalizeDocumentSearchQuery(query).split(" ").filter(Boolean);
+    if (tokens.length === 0) return true;
+
+    const tags = Array.isArray(file.searchTags)
+        ? file.searchTags
+        : (Array.isArray(file.tags) ? file.tags : []);
+    const searchableText = normalizeDocumentSearchQuery([
+        file.name,
+        file.cleanName,
+        file.folder,
+        file.folderName,
+        file.path,
+        file.addedBy,
+        ...tags
+    ].filter(Boolean).join(" "));
+
+    return tokens.every(token => searchableText.includes(token));
+}
+
+function filterDocumentsBySearch(files, query) {
+    return (Array.isArray(files) ? files : [])
+        .filter(file => matchesDocumentSearch(file, query));
+}
 
 function setProtectedStatusMessage(message, isError = true) {
 
@@ -329,7 +363,7 @@ let dashboardFilterState = {
 
 function displayDashboard(files) {
     // Renderer must never modify the master document collection.
-    const renderFiles = Array.isArray(files) ? files : [];
+    const renderFiles = filterDocumentsBySearch(files, globalDocumentSearchQuery);
 
     // Statistics always represent the complete document collection.
     updateCategoryStats(currentDashboardFiles);
@@ -1709,25 +1743,20 @@ async function loadPDFs() {
 
 // Search PDFs
 async function searchPDFs() {
+    const searchInput = document.getElementById("pdfSidebarSearchInput")
+        || document.getElementById("globalSearch");
+    const keyword = (searchInput?.value || "").trim();
 
-    const keyword = document.getElementById("searchInput").value;
-
-    if (keyword.trim() === "") {
-        loadDocuments();
+    if (!keyword) {
+        pdfPageState.searchQuery = "";
+        pdfPageState.currentPage = 1;
+        await renderPdfSectionData();
         return;
     }
 
-    const response = await fetch(
-        "/pdfs/search?q=" +
-        encodeURIComponent(keyword)
-    );
-
-    const result = await parseJsonResponse(response);
-
-    if (result.success) {
-        displayDashboard(result.files);
-    }
-
+    pdfPageState.searchQuery = keyword;
+    pdfPageState.currentPage = 1;
+    await renderPdfSectionData();
 }
 
 // Show document information
@@ -2793,44 +2822,11 @@ function openDocxEditorNav() {
 }
 
 function handleGlobalSearch(val) {
-    const query = (val || "").toLowerCase().trim();
-    if (!query) {
-        displayDashboard(currentDashboardFiles);
-        return;
-    }
-    const matched = (currentDashboardFiles || []).filter(f => (f.name || "").toLowerCase().includes(query));
-    const body = document.getElementById("pdfTableBody");
-    if (!body) return;
-    body.innerHTML = "";
-    if (matched.length === 0) {
-        body.innerHTML = `<tr><td colspan='7' style='text-align: center; color: var(--text-muted); padding: 36px 20px; font-size: 14px;'>No files matching "${escapeHtml(query)}"</td></tr>`;
-        return;
-    }
-    matched.forEach(file => {
-        const ext = (file.name.split('.').pop() || 'FILE').toUpperCase();
-        const isStarred = (starredDocuments || []).includes(file.name);
-        const iconBadge = getFileTypeIconBadge(file);
-        const formattedDate = getFormattedModifiedDate(file.modified);
-        const formattedSize = formatFileSize(file.size);
-        const cleanName = file.name.replace(/^\d{10,14}-/, "");
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td class="col-checkbox"><input type="checkbox" class="file-row-cb" data-filename="${escapeHtml(file.name)}"></td>
-            <td class="col-star"><i class="${isStarred ? 'fas fa-star starred' : 'far fa-star'}" onclick="toggleStarDocument('${escapeHtml(file.name)}')"></i></td>
-            <td class="col-name"><div class="file-name-cell">${iconBadge}<span class="file-title-txt" title="${escapeHtml(cleanName)}">${escapeHtml(cleanName)}</span></div></td>
-            <td class="col-type"><span class="type-pill type-${ext.toLowerCase()}">${ext}</span></td>
-            <td class="col-size">${formattedSize}</td>
-            <td class="col-modified">${formattedDate}</td>
-            <td class="col-actions">
-                <div class="table-actions-group">
-                    <button class="action-btn" onclick="openPreviewModal('${escapeHtml(file.name)}')" title="Preview"><i class="far fa-eye"></i></button>
-                    ${ext.toLowerCase() === 'docx' ? `<button class="action-btn edit-btn" onclick="openDocxWordEditor('${escapeHtml(file.name)}')" title="Edit in DOCX Workspace"><i class="fas fa-edit"></i></button>` : ''}
-                    <button class="action-btn" onclick="downloadDocument('${escapeHtml(file.name)}')" title="Download"><i class="fas fa-arrow-down"></i></button>
-                </div>
-            </td>
-        `;
-        body.appendChild(tr);
-    });
+    globalDocumentSearchQuery = normalizeDocumentSearchQuery(val);
+    pdfPageState.currentPage = 1;
+    displayDashboard(currentDashboardFiles);
+    renderPdfSectionData();
+    renderDocxFilesTable();
 }
 
 async function loadDocxFiles() {
@@ -2839,10 +2835,10 @@ async function loadDocxFiles() {
         return file.type === "docx" || name.endsWith(".docx") || name.endsWith(".doc");
     });
 
-    // If dashboard files haven't loaded yet or are empty, fetch from /documents/all or /docx/list
+    // Fallback: fetch DOCX files from the dedicated DOCX endpoint.
     if (docxFiles.length === 0) {
         try {
-            const res = await fetch("/documents/all");
+            const res = await fetch("/docx/list");
             const data = await res.json();
 
             if (data.success && Array.isArray(data.files)) {
@@ -2937,7 +2933,7 @@ function renderDocxFilesTable() {
     const table = document.getElementById("docxFilesTable");
     if (!tableBody) return;
 
-    let filtered = [...docxState.files];
+    let filtered = filterDocumentsBySearch(docxState.files, globalDocumentSearchQuery);
 
     if (docxState.currentTab === "starred") {
         filtered = filtered.filter(f => docxState.starredFiles.has(cleanDocxName(f.name)) || docxState.starredFiles.has(f.name));
@@ -5416,9 +5412,6 @@ async function handleBatchFilesUpload(files, inputElement = null) {
 
     // Refresh Documents & States
     await loadDocuments();
-    if (typeof loadDocxFiles === "function") {
-        loadDocxFiles();
-    }
 
     // Reset input elements
     if (inputElement && inputElement.value !== undefined) {
@@ -5590,70 +5583,6 @@ document.addEventListener("click", (e) => {
         !e.target.closest(".nav-icon-btn") &&
         !e.target.closest(".user-profile-menu-wrapper")) {
         closeAllPopovers();
-    }
-});
-
-// Setup Live Search filter in top navbar
-document.addEventListener("DOMContentLoaded", () => {
-    const globalSearch = document.getElementById("globalSearch");
-    if (globalSearch) {
-        globalSearch.addEventListener("input", (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            if (!query) {
-                displayDashboard(currentDashboardFiles);
-                return;
-            }
-            const matched = currentDashboardFiles.filter(f => f.name.toLowerCase().includes(query));
-            const body = document.getElementById("pdfTableBody");
-            if (!body) return;
-            body.innerHTML = "";
-            if (matched.length === 0) {
-                body.innerHTML = `<tr><td colspan='7' style='text-align: center; color: var(--text-muted); padding: 36px 20px; font-size: 14px;'>No files matching "${query}"</td></tr>`;
-                return;
-            }
-            matched.forEach(file => {
-                const ext = (file.name.split('.').pop() || 'FILE').toUpperCase();
-                const isStarred = starredDocuments.includes(file.name);
-                const iconBadge = getFileTypeIconBadge(file);
-                const formattedDate = getFormattedModifiedDate(file.modified);
-                const formattedSize = formatFileSize(file.size);
-                const cleanName = file.name.replace(/^\d{10,14}-/, "");
-
-                const row = document.createElement("tr");
-                row.className = "modern-doc-row";
-                row.innerHTML = `
-                    <td class="col-select"><input type="checkbox" class="doc-select-checkbox" data-filename="${file.name.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"></td>
-                    <td class="col-star"><button type="button" class="star-btn ${isStarred ? "starred" : ""}" onclick="event.stopPropagation(); toggleStarDocument('${file.name.replace(/'/g, "\\'")}', this)"><i class="${isStarred ? "fas" : "far"} fa-star"></i></button></td>
-                    <td class="col-name"><div class="doc-title-cell">${iconBadge}<a href="javascript:void(0)" class="doc-filename-link" title="${file.name.replace(/"/g, '&quot;')}">${cleanName}</a></div></td>
-                    <td class="col-type"><span class="type-pill-text">${ext}</span></td>
-                    <td class="col-modified"><span class="date-text">${formattedDate}</span></td>
-                    <td class="col-size"><span class="size-text">${formattedSize}</span></td>
-                    <td class="col-actions action-cell">
-                        <button class="action-menu-btn" title="More options" onclick="event.stopPropagation();"><i class="fas fa-ellipsis-v"></i></button>
-                        <div class="action-menu">${buildActionMenu(file)}</div>
-                    </td>
-                `;
-                const link = row.querySelector(".doc-filename-link");
-                if (link) {
-                    link.onclick = (ev) => { ev.stopPropagation(); openDocument(file.name); };
-                }
-                row.onclick = (ev) => {
-                    if (ev.target.closest("button") || ev.target.closest("input") || ev.target.closest(".action-menu")) return;
-                    showPreview(file.name);
-                };
-                const menuButton = row.querySelector(".action-menu-btn");
-                const menu = row.querySelector(".action-menu");
-                if (menuButton && menu) {
-                    menuButton.onclick = (ev) => {
-                        ev.stopPropagation();
-                        const wasOpen = menu.style.display === "block";
-                        document.querySelectorAll(".action-menu").forEach(m => m.style.display = "none");
-                        menu.style.display = wasOpen ? "none" : "block";
-                    };
-                }
-                body.appendChild(row);
-            });
-        });
     }
 });
 
@@ -5839,6 +5768,7 @@ async function renderPdfSectionData() {
             ...file,
             cleanName,
             tags,
+            searchTags: Array.isArray(file.tags) ? file.tags : [],
             addedBy,
             pages,
             isProtected
@@ -5860,16 +5790,8 @@ async function renderPdfSectionData() {
         // Folder tab
     }
 
-    // Apply Search Query
-    if (pdfPageState.searchQuery.trim()) {
-        const q = pdfPageState.searchQuery.toLowerCase().trim();
-        filtered = filtered.filter(f => 
-            f.name.toLowerCase().includes(q) ||
-            f.cleanName.toLowerCase().includes(q) ||
-            f.tags.some(t => t.toLowerCase().includes(q)) ||
-            f.addedBy.toLowerCase().includes(q)
-        );
-    }
+    const searchQuery = `${globalDocumentSearchQuery} ${pdfPageState.searchQuery}`;
+    filtered = filtered.filter(file => matchesDocumentSearch(file, searchQuery));
 
     // Apply Tag filter
     if (pdfPageState.selectedTags) {
@@ -6272,7 +6194,7 @@ function handlePdfPerPageChange(val) {
 }
 
 function handlePdfSidebarSearch(val) {
-    pdfPageState.searchQuery = val || "";
+    pdfPageState.searchQuery = (val || "").trim();
     pdfPageState.currentPage = 1;
     renderPdfSectionData();
 }
@@ -8388,7 +8310,7 @@ async function submitPdfToDocxConversion() {
         pdfToDocxState.lastConvertedResult = result;
         pdfToDocxState.isConverting = false;
 
-        setTimeout(() => {
+        setTimeout(async () => {
             if (progressView) progressView.style.display = "none";
             if (successView) successView.style.display = "block";
 
@@ -8404,9 +8326,10 @@ async function submitPdfToDocxConversion() {
 
             showToast(`Converted "${result.originalFilename}" to DOCX successfully!`, "success");
 
-            if (typeof loadDocuments === "function") loadDocuments();
-            if (typeof loadDocxFiles === "function") loadDocxFiles();
-            if (typeof loadPDFs === "function") loadPDFs();
+            // Refresh dashboard and DOCX workspace after successful conversion.
+            if (typeof loadDocuments === "function") {
+                await loadDocuments();
+            }
         }, 350);
 
     } catch (err) {
